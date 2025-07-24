@@ -1,0 +1,32 @@
+[project]
+name = "django-hierarchical-permissions"
+version = "0.0.1"
+description = ""
+authors = [
+    {name = "JakubJakacki18",email = "jakub.jakacki18@gmail.com"},
+    {name = "Marko IT",email = "MarkoIT955@proton.me"},
+]
+readme = "README.md"
+requires-python = ">=3.12,<4.0"
+dependencies = [
+    "django (>=5.2.3,<6.0.0)",
+    "rules (>=3.5,<4.0)",
+    "django-mptt (>=0.17.0,<0.18.0)",
+]
+keywords = ["django", "permissions", "rbac","hierarchy", "rules"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: Django",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[tool.poetry]
+packages = [{include = "hierarchical_permissions", from = "src"}]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
