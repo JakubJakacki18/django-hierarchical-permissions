@@ -38,3 +38,8 @@ class Action(str, Enum):
     CHANGE = "change"
     VIEW = "view"
     DELETE = "delete"
+
+DEFAULT_ORG_UNIT_TYPES = [
+    ("ROOT", "Root"),
+    ("GROUP", "Group"),
+]

@@ -1,6 +1,7 @@
 from django.contrib.auth.models import Group, User
 from django.db import models
 from mptt.models import MPTTModel, TreeForeignKey
+from hierarchical_permissions.utils import get_organizational_unit_choices
 
 
 class OrganizationalUnit(MPTTModel):
@@ -10,10 +11,7 @@ class OrganizationalUnit(MPTTModel):
     )
     type = models.CharField(
         max_length=20,
-        choices=[
-            ("ROOT", "Root"),
-            ("GROUP", "Group"),
-        ],
+        choices=get_organizational_unit_choices(),
     )
 
     class MPTTMeta:

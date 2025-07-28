@@ -1,5 +1,6 @@
+from django.conf import settings
 from django.db import models
-from .constants import PERMISSION_DIVIDER_BY_TYPES, Action
+from .constants import PERMISSION_DIVIDER_BY_TYPES, Action, DEFAULT_ORG_UNIT_TYPES
 
 
 def permission_extractor(self, *permissions_in_fun_or_args):
@@ -66,3 +67,6 @@ def get_model(model_or_obj):
         return model_or_obj.__class__
     else:
         return model_or_obj
+
+def get_organizational_unit_choices():
+    return getattr(settings, "HIERARCHICAL_PERMISSIONS_UNIT_TYPES", DEFAULT_ORG_UNIT_TYPES)
