@@ -1,3 +1,5 @@
+from collections import ChainMap
+
 from django.conf import settings
 from django.db import models
 from .constants import PERMISSION_DIVIDER_BY_TYPES, Action, DEFAULT_ORG_UNIT_TYPES
@@ -68,5 +70,12 @@ def get_model(model_or_obj):
     else:
         return model_or_obj
 
-def get_organizational_unit_choices():
-    return getattr(settings, "HIERARCHICAL_PERMISSIONS_UNIT_TYPES", DEFAULT_ORG_UNIT_TYPES)
+
+def get_organizational_unit_choices() -> list[tuple[str, str]]:
+    choices_from_settings = getattr(settings, "HIERARCHICAL_PERMISSIONS_UNIT_TYPES", [])
+    final_choices = [
+        DEFAULT_ORG_UNIT_TYPES[0],
+        *choices_from_settings,
+        *DEFAULT_ORG_UNIT_TYPES[1:],
+    ]
+    return final_choices

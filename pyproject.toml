@@ -3,8 +3,8 @@ name = "django-hierarchical-permissions"
 version = "0.0.1"
 description = ""
 authors = [
-    {name = "JakubJakacki18",email = "jakub.jakacki18@gmail.com"},
-    {name = "Marko IT",email = "MarkoIT955@proton.me"},
+    { name = "JakubJakacki18", email = "jakub.jakacki18@gmail.com" },
+    { name = "Marko IT", email = "MarkoIT955@proton.me" },
 ]
 readme = "README.md"
 requires-python = ">=3.12,<4.0"
@@ -13,7 +13,7 @@ dependencies = [
     "rules (>=3.5,<4.0)",
     "django-mptt (>=0.17.0,<0.18.0)",
 ]
-keywords = ["django", "permissions", "rbac","hierarchy", "rules"]
+keywords = ["django", "permissions", "rbac", "hierarchy", "rules"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Framework :: Django",
@@ -24,8 +24,15 @@ classifiers = [
 ]
 
 [tool.poetry]
-packages = [{include = "hierarchical_permissions", from = "src"}]
+packages = [{ include = "hierarchical_permissions", from = "src" }]
 
+[tool.poetry.scripts]
+test = "pytest"
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.4.1"
+pytest-django = "^4.11.1"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
