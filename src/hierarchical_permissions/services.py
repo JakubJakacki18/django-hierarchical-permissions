@@ -1,10 +1,10 @@
 from typing import Any
 import rules
 from django.contrib.auth.models import User, Permission
-from .constants import (
-    PERMISSION_SUBTYPES_LABELS,
+from .conf import (
+    PERMISSION_TYPES_LABELS,
     Action,
-    PermissionSubType,
+    PermissionType,
 )
 from .utils import actions_to_list, permissions_divider
 from .models import UserGroup
@@ -19,9 +19,7 @@ class PermissionService:
     # PermissionService should be singleton/multiton to use the potential of that constructor.
     def __init__(self, user: User):
         self.user = user
-        self.user_groups = UserGroup.objects.filter(
-            users=user
-        ).prefetch_related(
+        self.user_groups = UserGroup.objects.filter(users=user).prefetch_related(
             "permission_groups", "organizational_units"
         )
 
@@ -33,7 +31,9 @@ class PermissionService:
         if action:
             permissions = permissions.filter(codename__contains=action.value)
         if not fields_included:
-            permissions = permissions.exclude(codename__startswith=PermissionSubType.FIELD.value)
+            permissions = permissions.exclude(
+                codename__startswith=PermissionType.FIELD.value
+            )
         return [
             f"{content_type.app_label}.{permission.codename}"
             for permission in permissions
@@ -68,7 +68,9 @@ class PermissionService:
             ascending=True
         )
         # In test method get_ancestors() with include_self=True doesn't work
-        list_of_organizational_units = [parent_organizational_unit] + list(list_of_organizational_units)
+        list_of_organizational_units = [parent_organizational_unit] + list(
+            list_of_organizational_units
+        )
         for organizational_unit in list_of_organizational_units:
             user_groups = UserGroup.objects.filter(
                 users=self.user,
@@ -150,11 +152,12 @@ class PermissionService:
         # Walidacja field_name do napisania
         content_type = ContentType.objects.get_for_model(model)
         view_permission, change_permission = (
-            self.has_perm_checker(obj,
-                                  f"{content_type.app_label}.{PermissionSubType.FIELD.value}_{field_name}_{action.value}_{model.__name__.lower()}", )
-            for action
-            in
-            (Action.VIEW, Action.CHANGE))
+            self.has_perm_checker(
+                obj,
+                f"{content_type.app_label}.{PermissionType.FIELD.value}_{field_name}_{action.value}_{model.__name__.lower()}",
+            )
+            for action in (Action.VIEW, Action.CHANGE)
+        )
         return view_permission, change_permission
 
 
@@ -163,19 +166,22 @@ class PermissionCreationService:
 
     @staticmethod
     def create_crud_permissions_by_type(
-            model_name: str, permission_type: PermissionSubType, description: str = None
+        model_name: str, permission_type: PermissionType, description: str = None
     ) -> list:
-        if permission_type not in PERMISSION_SUBTYPES_LABELS.keys():
+        if permission_type not in PERMISSION_TYPES_LABELS.keys():
             raise KeyError(
                 f"Key {permission_type} doesn't exist in PERMISSION_TYPES_LABELS"
             )
-        if permission_type == PermissionSubType.FIELD:
+        if permission_type == PermissionType.FIELD:
             raise TypeError(
                 "Argument 'permission_type' cannot be 'PermissionType.FIELD'. Use 'create_fields_permissions' method."
             )
         permissions_list = []
         action_values = actions_to_list(
-            Action.ADD, Action.VIEW, Action.CHANGE, Action.DELETE,
+            Action.ADD,
+            Action.VIEW,
+            Action.CHANGE,
+            Action.DELETE,
         )
         for action_value in action_values:
             permissions_list.append(
@@ -183,7 +189,7 @@ class PermissionCreationService:
                     (
                         f"{permission_type.value}_{action_value}_{model_name}",
                         (
-                            PERMISSION_SUBTYPES_LABELS[permission_type](
+                            PERMISSION_TYPES_LABELS[permission_type](
                                 action_value, model_name
                             )
                             if description is None
@@ -196,7 +202,7 @@ class PermissionCreationService:
 
     @staticmethod
     def create_fields_permissions(model) -> list:
-        if PermissionSubType.FIELD not in PERMISSION_SUBTYPES_LABELS.keys():
+        if PermissionType.FIELD not in PERMISSION_TYPES_LABELS.keys():
             assert KeyError(
                 "Key 'PermissionType.FIELD' doesn't exist in PERMISSION_TYPES_LABELS"
             )
@@ -209,8 +215,8 @@ class PermissionCreationService:
                 permissions_list.append(
                     tuple(
                         (
-                            f"{PermissionSubType.FIELD.value}_{field}_{action_value}_{model_name}",
-                            PERMISSION_SUBTYPES_LABELS[PermissionSubType.FIELD](
+                            f"{PermissionType.FIELD.value}_{field}_{action_value}_{model_name}",
+                            PERMISSION_TYPES_LABELS[PermissionType.FIELD](
                                 action_value, model_name, field
                             ),
                         )
@@ -220,7 +226,7 @@ class PermissionCreationService:
 
     @staticmethod
     def add_rule_to_permission(
-            app_name: str, codename: str, description: str, rule: callable
+        app_name: str, codename: str, description: str, rule: callable
     ):
         rules.add_rule(
             f"{app_name}.{codename}",
@@ -230,14 +236,14 @@ class PermissionCreationService:
 
     @staticmethod
     def add_rules_to_permissions(
-            app_name: str,
-            codenames_with_descriptions: list[tuple[str, str]],
-            rules_to_assign: list[callable],
+        app_name: str,
+        codenames_with_descriptions: list[tuple[str, str]],
+        rules_to_assign: list[callable],
     ) -> list[tuple[str, str]]:
 
         if (
-                len(rules_to_assign) != len(codenames_with_descriptions)
-                and len(rules_to_assign) != 1
+            len(rules_to_assign) != len(codenames_with_descriptions)
+            and len(rules_to_assign) != 1
         ):
             raise ValueError(
                 "Count of rules and permissions must be the same or rules must be 1"
@@ -257,7 +263,7 @@ class PermissionCreationService:
 
     @staticmethod
     def add_permissions_to_permissions_groups(
-            group_permissions: dict[str, list[dict[str, Any]]],
+        group_permissions: dict[str, list[dict[str, Any]]],
     ):
         """
         Method to add permissions to groups.

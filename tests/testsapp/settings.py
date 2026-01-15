@@ -82,7 +82,23 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-HIERARCHICAL_PERMISSIONS_UNIT_TYPES = [("TEST", "test choice")]
+# HIERARCHICAL_PERMISSIONS_UNIT_TYPES = [("TEST", "test choice")]
+
+HIERARCHICAL_PERMISSIONS_SETTINGS = {
+    "EXTRA_PERMISSION_SUBTYPES": {
+        "hardcoded": [
+            (
+                "HOLIDAY",
+                "isHoliday",
+                lambda action, model: f"Can {action} {model} on holidays",
+            )
+        ],
+        "olp": [("REGION", "region"), ("AGE", "age")],
+        "regular": [("PDF", "pdf")],
+    },
+    "EXTRA_ACTIONS": {"EXPORT": "export"},
+    "EXTRA_ORG_UNIT_TYPES": [("FACULTY", "faculty"), ("DEPARTMENT", "department")],
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/

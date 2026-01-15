@@ -71,11 +71,11 @@ def get_model(model_or_obj):
         return model_or_obj
 
 
-def get_organizational_unit_choices() -> list[tuple[str, str]]:
-    choices_from_settings = getattr(settings, "HIERARCHICAL_PERMISSIONS_UNIT_TYPES", [])
-    final_choices = [
-        DEFAULT_ORG_UNIT_TYPES[0],
-        *choices_from_settings,
-        *DEFAULT_ORG_UNIT_TYPES[1:],
-    ]
-    return final_choices
+# def get_organizational_unit_choices() -> list[tuple[str, str]]:
+#     choices_from_settings = getattr(settings, "HIERARCHICAL_PERMISSIONS_UNIT_TYPES", [])
+#     final_choices = [
+#         DEFAULT_ORG_UNIT_TYPES[0],
+#         *choices_from_settings,
+#         *DEFAULT_ORG_UNIT_TYPES[1:],
+#     ]
+#     return final_choices
