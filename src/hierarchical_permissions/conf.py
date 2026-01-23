@@ -6,6 +6,7 @@ from enum import Enum
 from types import MappingProxyType
 from . import defaults
 from .defaults import PermissionStrategy
+import copy
 
 SETTINGS_KEY = "HIERARCHICAL_PERMISSIONS_SETTINGS"
 
@@ -89,7 +90,6 @@ def _init_permission_subtypes():
             "}\n\n"
             "Each value must be a list of tuples with 2 or 3 elements."
         )
-
     return (
         new_permission_subtypes,
         new_subtypes_labels,
@@ -108,8 +108,15 @@ def get_organizational_unit_types() -> list[tuple[str, str]]:
 
 
 def _get_permission_types_labels():
+    from hierarchical_permissions.defaults import (
+        PERMISSION_TYPES_LABELS as DEFAULT_PERMISSION_TYPES_LABELS,
+    )
+
     final_labels = {}
-    for key_name, handler in extra_subtypes_labels.items():
+    default_subtypes_labels = {
+        key: handler for key, handler in DEFAULT_PERMISSION_TYPES_LABELS.items()
+    }
+    for key_name, handler in (default_subtypes_labels | extra_subtypes_labels).items():
         try:
             enum_member = getattr(PermissionType, key_name)
             final_labels[enum_member] = handler
@@ -120,7 +127,7 @@ def _get_permission_types_labels():
 
 def _get_permission_divider_by_strategy():
     _user_dividers = get_user_setting("EXTRA_DIVIDERS", {})
-    _combined_dividers = defaults.PERMISSION_DIVIDER_BY_STRATEGY.copy()
+    _combined_dividers = copy.deepcopy(defaults.PERMISSION_DIVIDER_BY_STRATEGY)
 
     for key, val_list in extra_permission_divider_by_types.items():
         _combined_dividers[key].extend(val[0] for val in val_list)

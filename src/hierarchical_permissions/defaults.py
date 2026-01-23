@@ -15,18 +15,10 @@ PERMISSION_TYPE = {
 }
 
 PERMISSION_TYPES_LABELS = {
-    PERMISSION_TYPE[
-        "WEEKEND"
-    ]: lambda action_value, model_name: f"Can {action_value} {model_name} only when it's weekend",
-    PERMISSION_TYPE[
-        "FIELD"
-    ]: lambda action_value, model_name, field: f"Can {action_value} {field} field from {model_name} model",
-    PERMISSION_TYPE[
-        "OWNER"
-    ]: lambda action_value, model_name: f"Can {action_value} {model_name} when user is assigned to owner field",
-    PERMISSION_TYPE[
-        "ALL_FIELDS"
-    ]: lambda action_value, model_name: f"Can {action_value} all fields in {model_name}",
+    "WEEKEND": lambda action_value, model_name: f"Can {action_value} {model_name} only when it's weekend",
+    "FIELD": lambda action_value, model_name, field: f"Can {action_value} {field} field from {model_name} model",
+    "OWNER": lambda action_value, model_name: f"Can {action_value} {model_name} when user is assigned to owner field",
+    "ALL_FIELDS": lambda action_value, model_name: f"Can {action_value} all fields in {model_name}",
 }
 
 PERMISSION_DIVIDER_BY_STRATEGY = {
