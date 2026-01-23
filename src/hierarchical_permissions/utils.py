@@ -1,8 +1,5 @@
-from collections import ChainMap
-
-from django.conf import settings
 from django.db import models
-from .constants import PERMISSION_DIVIDER_BY_TYPES, Action, DEFAULT_ORG_UNIT_TYPES
+from .conf import PERMISSION_DIVIDER_BY_STRATEGY, Action
 
 
 def permission_extractor(self, *permissions_in_fun_or_args):
@@ -27,15 +24,15 @@ def args_extractor(*args):
 
 
 def permissions_divider(*permissions) -> dict[str, list]:
-    if "regular" not in PERMISSION_DIVIDER_BY_TYPES.keys():
+    if "regular" not in PERMISSION_DIVIDER_BY_STRATEGY.keys():
         raise KeyError(f"Key 'regular' doesn't exist in PERMISSION_DIVIDER_BY_TYPES.")
-    permissions_dict = {key: [] for key in PERMISSION_DIVIDER_BY_TYPES}
+    permissions_dict = {key: [] for key in PERMISSION_DIVIDER_BY_STRATEGY}
     for permission in permissions:
         prefix = get_prefix_from_permission(permission)
         key = next(
             (
                 key
-                for key, permission_types_list in PERMISSION_DIVIDER_BY_TYPES.items()
+                for key, permission_types_list in PERMISSION_DIVIDER_BY_STRATEGY.items()
                 if any(
                     permission_type.value == prefix
                     for permission_type in permission_types_list

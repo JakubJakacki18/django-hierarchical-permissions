@@ -1,6 +1,6 @@
 from typing import Type
 from django.db.models import Model
-from .constants import Action
+from .conf import Action
 from .services import PermissionService
 from .decorators import has_perm_checker_decorator
 
@@ -24,25 +24,19 @@ class DecoratorAdminMixin:
         return False
 
     @has_perm_checker_decorator(
-        lambda self: (
-                f"{self.get_app_name()}.delete_{self.get_model_name()}",
-        )
+        lambda self: (f"{self.get_app_name()}.delete_{self.get_model_name()}",)
     )
     def has_delete_permission(self, request, obj=None):
         return False
 
     @has_perm_checker_decorator(
-        lambda self: (
-                f"{self.get_app_name()}.change_{self.get_model_name()}",
-        )
+        lambda self: (f"{self.get_app_name()}.change_{self.get_model_name()}",)
     )
     def has_change_permission(self, request, obj=None):
         return False
 
     @has_perm_checker_decorator(
-        lambda self: (
-                f"{self.get_app_name()}.view_{self.get_model_name()}",
-        )
+        lambda self: (f"{self.get_app_name()}.view_{self.get_model_name()}",)
     )
     def has_view_permission(self, request, obj=None):
         return False

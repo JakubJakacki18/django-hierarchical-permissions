@@ -134,28 +134,3 @@ def test_permission_types_labels_when_extended_by_extra_values_has_expected_size
         f"Check amount of extra values in extra_values_dict fixture\n"
         f"Check testapp.settings and then EXTRA_PERMISSION_SUBTYPES"
     )
-
-
-# def test_total_values_from_settings_constants():
-#     print(f"OrganizationalUnit.type: {get_organizational_unit_types()}")
-#     print(f"Action: {list(Action)}")
-#     print(f"PermissionType: {list(PermissionType)}")
-#     print(f"PERMISSION_DIVIDER_BY_TYPES: {PERMISSION_DIVIDER_BY_STRATEGY}")
-#     print(f"PERMISSION_SUBTYPES_LABELS: {PERMISSION_TYPES_LABELS}")
-#
-#
-# def test_immutability_of_constants():
-#     from hierarchical_permissions.models import OrganizationalUnit
-#     from hierarchical_permissions.conf import (
-#         Action,
-#         PermissionType,
-#         PERMISSION_DIVIDER_BY_STRATEGY,
-#         PERMISSION_TYPES_LABELS,
-#         get_organizational_unit_types,
-#     )
-#
-#     org_unit_types = OrganizationalUnit._meta.get_field("type").choices
-#     assert len(org_unit_types) == len(
-#         get_organizational_unit_types()
-#     ), f"OrganizationalUnit.type len is not equal fun get_organizational_unit_types() len"
-#     assert org_unit_types == get_organizational_unit_types()
