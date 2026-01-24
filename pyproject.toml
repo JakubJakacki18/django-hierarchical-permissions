@@ -26,14 +26,22 @@ classifiers = [
 [tool.poetry]
 packages = [{ include = "hierarchical_permissions", from = "src" }]
 
-[tool.poetry.scripts]
-test = "pytest"
+#[tool.poetry.scripts]
+#test = "pytest"
 
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.4.1"
+pytest = "^9.0.2"
 pytest-django = "^4.11.1"
+black = ">=25.12.0,<26.0.0"
+
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "testsapp.settings"
+python_files = ["testsuite/test_*.py", ]
+testpaths = ["testsuite"]
+pythonpath = ["tests"]

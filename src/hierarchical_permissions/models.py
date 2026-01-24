@@ -1,7 +1,7 @@
 from django.contrib.auth.models import Group, User
 from django.db import models
 from mptt.models import MPTTModel, TreeForeignKey
-from hierarchical_permissions.utils import get_organizational_unit_choices
+from hierarchical_permissions.conf import get_organizational_unit_types
 
 
 class OrganizationalUnit(MPTTModel):
@@ -11,7 +11,7 @@ class OrganizationalUnit(MPTTModel):
     )
     type = models.CharField(
         max_length=20,
-        choices=get_organizational_unit_choices(),
+        choices=get_organizational_unit_types(),
     )
 
     class MPTTMeta:
@@ -26,14 +26,15 @@ class UserGroup(models.Model):
         OrganizationalUnit, related_name="user_groups"
     )
     users = models.ManyToManyField(User, related_name="user_groups")
-    permission_groups = models.ManyToManyField(
-        Group, related_name="user_groups"
-    )
+    permission_groups = models.ManyToManyField(Group, related_name="user_groups")
 
 
 class BaseModel(models.Model):
     parent = TreeForeignKey(
-        "hierarchical_permissions.OrganizationalUnit", on_delete=models.CASCADE, null=True, blank=True
+        "hierarchical_permissions.OrganizationalUnit",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
     )
 
     class Meta:
