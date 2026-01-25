@@ -1,5 +1,9 @@
 # Django Hierarchical Permissions
 
+[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PyPI version](https://badge.fury.io/py/django-hierarchical-permissions.svg)](https://badge.fury.io/py/django-hierarchical-permissions)
+
 ## Introduction to models
 
 The system is built upon several **core models**: **OrganizationalUnit**, **UserGroup**, **Group** (Django’s default
@@ -15,7 +19,7 @@ functionality and enabling **flexible**, **granular access control**.
 It supports hierarchical structuring through a self-referential `parent` field, allowing one organizational unit to be
 nested within another.
 
-![Organizational units](markdown_assets/README/org_unit.png)
+![Organizational units](https://github.com/JakubJakacki18/django-hierarchical-permissions/raw/main/markdown_assets/README/org_unit.png)
 
 #### Example – Organizational Units Hierarchy
 
@@ -37,7 +41,7 @@ Such a setup enables permission inheritance and logical access scoping within th
 It defines many-to-many relationships with all of these, serving as a flexible way to associate users with specific
 units and permission groups.
 
-![User groups](markdown_assets/README/user_group_to_perm_group_and_org_unit.png)
+![User groups](https://github.com/JakubJakacki18/django-hierarchical-permissions/raw/main/markdown_assets/README/user_group_to_perm_group_and_org_unit.png)
 
 #### Example – User Groups Structure
 
@@ -73,7 +77,7 @@ Examples of permission groups include:
 - **Lead Instructors**
 - **Curriculum Administrators**
 
-![Permission groups](markdown_assets/README/perm_group_to_model.png)
+![Permission groups](https://github.com/JakubJakacki18/django-hierarchical-permissions/raw/main/markdown_assets/README/perm_group_to_model.png)
 
 #### Example – Permission Groups and Model-Level Access
 
@@ -143,7 +147,7 @@ like **add, delete, change, view**
 
 ## Flow
 
-![John idea](markdown_assets/README/member_john.jpg)
+![John idea](https://github.com/JakubJakacki18/django-hierarchical-permissions/raw/main/markdown_assets/README/member_john.jpg)
 
 Permission-checking process:
 
@@ -183,4 +187,4 @@ Link: [Rules](https://pypi.org/project/rules/)
 
 ## Last changed
 
-Date: **16.06.2025r.**
+Date: **25.01.2026r.**
