@@ -7,9 +7,8 @@
 ## Introduction to models
 
 The system is built upon several **core models**: **OrganizationalUnit**, **UserGroup**, **Group** (Django’s default
-`Group` model, in document it'll be described as `Permission Group` to avoid confusion with `User Group`), and **User
-** (Django’s default `User`
-model).  
+`Group` model, in document it'll be described as `Permission Group` to avoid confusion with `User Group`), and **User**
+(Django’s default `User` model).  
 These models are interconnected through well-defined relationships, providing the foundation for the system’s
 functionality and enabling **flexible**, **granular access control**.
 
@@ -105,32 +104,33 @@ When `is_superuser` value `True` then user has got access to everything in the a
 **Permission codename** is string value representing specific permission. **Codename** is stored in database in
 `Permissions` table. Permission codenames have their own syntax. Two variants are foreseen:
 
-`AppLabel.PermissionSubType_Action_Model`
+`AppLabel.PermissionType_Action_Model`
 
 and
 
 `AppLabel.Action_Model`
 
-Where `PermissionSubTypes` and `Actions` are defined in `swierk_permissions.constants`. First variant is used in more
-complex cases. Can be created using `PermissionCreationService`. Rules could be assign in app where model is defined in
+Where `PermissionType` and `Action` are defined in `hierarchical_permissions.defaults` and can be extended
+by configuration in `settings.py`. First variant is used in more complex cases.
+Can be created using `PermissionCreationService`. Rules could be assign in app where model is defined in
 `apps.py` file. Second variant is created by default and in present form doesn't allow assigning rules to codenames.
 
 ### Permission constants
 
-#### PERMISSION_DIVIDER_BY_TYPES
+#### PERMISSION_DIVIDER_BY_STRATEGY
 
-There are three main types of permissions.
+There are three main strategies of permissions.
 
-- `regular` - permissions which operates only on codenames. If user has it, and object is in scope of organizational
+- `MODEL` - permissions which operates only on codenames. If user has it, and object is in scope of organizational
   unit permission is granted.
-- `olp` - permissions which operates on codenames and rules. If user has it, and object is in scope of organizational
+- `OBJECT` - permissions which operates on codenames and rules. If user has it, and object is in scope of organizational
   unit, rule assigned to olp permission is checked. If rule is fulfilled then permission is granted.
-- `hardcoded` - permissions which operates only on rules. They are not stored in database. If rule is fulfilled then
+- `HARDCODED` - permissions which operates only on rules. They are not stored in database. If rule is fulfilled then
   permission is granted.
 
-#### PermissionSubType
+#### PermissionType
 
-**PermissionSubType** is enum with propositions of permissions needed in the project. Can be used in
+**PermissionType** is enum with propositions of permissions needed in the project. Can be used in
 `PERMISSION_TYPES_LABELS` or in `PermissionCreationService`.
 
 #### PERMISSION_TYPES_LABELS
@@ -173,6 +173,10 @@ Permission-checking process:
 8. Steps 3–6 are repeated until:
     - a matching permission is found, or
     - the highest level in the hierarchy is reached (e.g., the university) without success.
+
+## Installation and configuration
+
+**TO DO**
 
 ## Bibliography
 
