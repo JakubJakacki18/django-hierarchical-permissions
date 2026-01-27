@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Callable
 import rules
 from django.contrib.auth.models import User, Permission
 from .conf import (
@@ -134,11 +134,13 @@ class PermissionService:
         permissions_dict = permissions_divider(*permissions)
         # print("permission_dict: ", permissions_dict)
         if self._regular_permissions_checker(permissions_dict.get("regular"), obj):
+            # TODO Wprowadzić logowanie
             print("Regular: ", True)
             return True
         if self._olp_permissions_checker(permissions_dict.get("olp"), obj):
             print("Olp: ", True)
             return True
+        # TODO Koncept i zasada działania do ponownego przemyślenia
         if self._hardcoded_permissions_checker(permissions_dict.get("hardcoded"), obj):
             print("Hardcoded: ", True)
             return True
@@ -162,12 +164,14 @@ class PermissionService:
 
 
 class PermissionCreationService:
-    """Class responsible for checking permissions. Permission Creation Service is used to create codenames and assign rules to permission"""
+    # TODO Poprawić opisy klas/funkcji!
+    """Permission Creation Service is used to create codenames and assign rules to permission"""
 
     @staticmethod
     def create_crud_permissions_by_type(
         model_name: str, permission_type: PermissionType, description: str = None
     ) -> list:
+        # TODO Zastanowić się nad sensem tego sprawdzenia przy obecności description
         if permission_type not in PERMISSION_TYPES_LABELS.keys():
             raise KeyError(
                 f"Key {permission_type} doesn't exist in PERMISSION_TYPES_LABELS"
@@ -203,7 +207,7 @@ class PermissionCreationService:
     @staticmethod
     def create_fields_permissions(model) -> list:
         if PermissionType.FIELD not in PERMISSION_TYPES_LABELS.keys():
-            assert KeyError(
+            raise KeyError(
                 "Key 'PermissionType.FIELD' doesn't exist in PERMISSION_TYPES_LABELS"
             )
         model_name = model.__name__.lower()
@@ -226,7 +230,7 @@ class PermissionCreationService:
 
     @staticmethod
     def add_rule_to_permission(
-        app_name: str, codename: str, description: str, rule: callable
+        app_name: str, codename: str, description: str, rule: Callable
     ):
         rules.add_rule(
             f"{app_name}.{codename}",
@@ -238,7 +242,7 @@ class PermissionCreationService:
     def add_rules_to_permissions(
         app_name: str,
         codenames_with_descriptions: list[tuple[str, str]],
-        rules_to_assign: list[callable],
+        rules_to_assign: list[Callable],
     ) -> list[tuple[str, str]]:
 
         if (

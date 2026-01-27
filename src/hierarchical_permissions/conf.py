@@ -1,12 +1,11 @@
-from argparse import ArgumentError
+from typing import TYPE_CHECKING
 from django.core.exceptions import ImproperlyConfigured
-
 from django.conf import settings
-from enum import Enum
 from types import MappingProxyType
+import copy
+
 from . import defaults
 from .defaults import PermissionStrategy
-import copy
 
 SETTINGS_KEY = "HIERARCHICAL_PERMISSIONS_SETTINGS"
 
@@ -159,3 +158,9 @@ PERMISSION_TYPES_LABELS = MappingProxyType(_get_permission_types_labels())
 
 # PERMISSION_DIVIDER_BY_STRATEGY declaration
 PERMISSION_DIVIDER_BY_STRATEGY = MappingProxyType(_get_permission_divider_by_strategy())
+
+if TYPE_CHECKING:
+    from enum import Enum
+
+    PermissionType = Enum
+    Action = Enum

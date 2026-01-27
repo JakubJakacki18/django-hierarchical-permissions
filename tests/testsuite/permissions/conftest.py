@@ -1,8 +1,14 @@
 import pytest
-from django.contrib.auth.models import User, Group
+import rules
+from django.contrib.auth.models import User, Group, Permission
+from django.contrib.contenttypes.models import ContentType
+
+from hierarchical_permissions.conf import PermissionType
 from hierarchical_permissions.models import OrganizationalUnit, UserGroup
 from hierarchical_permissions.services import PermissionCreationService
 from test_model_app.models import FakeModel
+
+from tests.test_model_app.rules import is_owner
 
 
 @pytest.fixture
@@ -120,7 +126,7 @@ def organizational_units(db):
 
 
 @pytest.fixture
-def permission_groups(db):
+def permission_groups(db, permissions_codenames):
     _permission_groups = {
         "Teacher": [
             {"model": FakeModel, "codenames": ["view_fakemodel"]},
@@ -131,6 +137,7 @@ def permission_groups(db):
                 "codenames": [
                     "view_fakemodel",
                     "change_fakemodel",
+                    "owner_delete_fakemodel",
                 ],
             },
         ],
@@ -178,3 +185,58 @@ def user_groups(db, users, organizational_units, permission_groups):
     ug4.permission_groups.set((permission_groups["teacher"],))
 
     return [ug1, ug2, ug3, ug4]
+
+
+@pytest.fixture
+def permissions_codenames(db):
+    content_type = ContentType.objects.get_for_model(FakeModel)
+    # FakeModel._meta.permissions += *PermissionCreationService.create_fields_permissions(FakeModel),
+    permissions = (
+        *PermissionCreationService.add_rules_to_permissions(
+            content_type.app_label,
+            PermissionCreationService.create_crud_permissions_by_type(
+                FakeModel._meta.model_name, PermissionType.OWNER
+            ),
+            [is_owner],
+        ),
+    )
+    for codename, name in permissions:
+        Permission.objects.get_or_create(
+            codename=codename, content_type=content_type, defaults={"name": name}
+        )
+
+    yield
+    for codename, _ in permissions:
+        rule_name = f"{content_type.app_label}.{codename}"
+        rules.remove_rule(rule_name)
+
+
+@pytest.fixture
+def fake_model_objects(db, users, organizational_units):
+    return {
+        "physics": FakeModel.objects.create(
+            parent=organizational_units["physics"],
+            name="Physics",
+            owner=users["teacher_janek"],
+        ),
+        "java": FakeModel.objects.create(
+            parent=organizational_units["java"],
+            name="Java",
+            owner=users["teacher_janek"],
+        ),
+        "csharp": FakeModel.objects.create(
+            parent=organizational_units["csharp"],
+            name="C#",
+            owner=users["teacher_janek"],
+        ),
+        "linux": FakeModel.objects.create(
+            parent=organizational_units["linux"],
+            name="Linux",
+            owner=users["teacher_franek"],
+        ),
+        "algebra": FakeModel.objects.create(
+            parent=organizational_units["math_algebra"],
+            name="Algebra",
+            owner=users["teacher_franek"],
+        ),
+    }
