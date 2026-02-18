@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING
 from django.core.exceptions import ImproperlyConfigured
 from django.conf import settings
 from types import MappingProxyType
+from enum import Enum
 import copy
 
 from . import defaults

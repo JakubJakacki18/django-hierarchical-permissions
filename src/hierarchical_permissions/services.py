@@ -1,4 +1,5 @@
-from typing import Any, Callable
+from collections.abc import Iterable
+from typing import Any, Callable, Optional
 import rules
 from django.contrib.auth.models import User, Permission
 from .conf import (
@@ -6,9 +7,12 @@ from .conf import (
     Action,
     PermissionType,
 )
+from .defaults import PermissionStrategy
 from .utils import actions_to_list, permissions_divider
 from .models import UserGroup
 from django.contrib.contenttypes.models import ContentType
+
+PermissionChecker = Callable[[Iterable[str], Optional[Any]], bool]
 
 
 # Class responsible for checking permissions
@@ -22,6 +26,15 @@ class PermissionService:
         self.user_groups = UserGroup.objects.filter(users=user).prefetch_related(
             "permission_groups", "organizational_units"
         )
+
+        self.permissions_checker_functions: dict[
+            PermissionStrategy, PermissionChecker
+        ] = {
+            PermissionStrategy.MODEL: self._regular_permissions_checker,
+            PermissionStrategy.OBJECT: self._olp_permissions_checker,
+            # TODO Koncept i zasada działania do ponownego przemyślenia
+            PermissionStrategy.HARDCODED: self._hardcoded_permissions_checker,
+        }
 
     @staticmethod
     def get_all_permissions_for_model(model, fields_included=False, action=None):
@@ -39,11 +52,15 @@ class PermissionService:
             for permission in permissions
         ]
 
-    def _regular_permissions_checker(self, permissions, obj) -> bool:
+    def _regular_permissions_checker(
+        self, permissions: Iterable[str], obj: Optional[Any]
+    ) -> bool:
         """Check regular permissions"""
         return any(self.has_permission(permission, obj) for permission in permissions)
 
-    def _olp_permissions_checker(self, permissions, obj) -> bool:
+    def _olp_permissions_checker(
+        self, permissions: Iterable[str], obj: Optional[Any]
+    ) -> bool:
         """Check OLP (Object Level Permission)"""
         # print(f"Sprawdzane olp uprawnien: {permissions}")
         if obj is None:
@@ -79,6 +96,11 @@ class PermissionService:
             if self._is_permission_in_user_groups(permission, user_groups):
                 return True
         return False
+
+    def _hardcoded_permissions_checker(
+        self, permissions: Iterable[str], obj: Optional[Any]
+    ):
+        return any(self.user.has_perm(permission, obj) for permission in permissions)
 
     @staticmethod
     def _is_permission_in_user_groups(permission, user_groups) -> bool:
@@ -131,24 +153,21 @@ class PermissionService:
     def has_perm_checker(self, obj, *permissions):
         if self.user.is_superuser:
             return True
-        permissions_dict = permissions_divider(*permissions)
-        # print("permission_dict: ", permissions_dict)
-        if self._regular_permissions_checker(permissions_dict.get("regular"), obj):
-            # TODO Wprowadzić logowanie
-            print("Regular: ", True)
-            return True
-        if self._olp_permissions_checker(permissions_dict.get("olp"), obj):
-            print("Olp: ", True)
-            return True
-        # TODO Koncept i zasada działania do ponownego przemyślenia
-        if self._hardcoded_permissions_checker(permissions_dict.get("hardcoded"), obj):
-            print("Hardcoded: ", True)
-            return True
-        print("has_perm_checker", False)
-        return False
+        permissions_divider_by_strategy = permissions_divider(*permissions)
 
-    def _hardcoded_permissions_checker(self, permissions, obj):
-        return any(self.user.has_perm(permission, obj) for permission in permissions)
+        for (
+            permission_strategy,
+            permission_checker_function,
+        ) in self.permissions_checker_functions.items():
+            if (
+                permissions := permissions_divider_by_strategy.get(
+                    permission_strategy.value
+                )
+            ) and permission_checker_function(permissions, obj):
+                # TODO Wprowadzić logowanie
+                print(f"{permission_strategy.value}: ", True)
+                return True
+        return False
 
     def has_field_permission_checker(self, model, field_name, obj=None):
         # Walidacja field_name do napisania
