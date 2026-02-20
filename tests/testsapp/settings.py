@@ -38,7 +38,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.admin",
     "hierarchical_permissions",
-    "test_model_app"
+    "test_model_app",
 ]
 
 MIDDLEWARE = [
@@ -66,15 +66,14 @@ DATABASES = {
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates']
-        ,
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [BASE_DIR / "templates"],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
@@ -109,7 +108,15 @@ HIERARCHICAL_PERMISSIONS_SETTINGS = {
                 lambda action, model: f"Can {action} {model} on holidays",
             )
         ],
-        "olp": [("REGION", "region"), ("AGE", "age")],
+        "olp": [
+            ("REGION", "region"),
+            (
+                "STAFF",
+                "staff",
+                lambda action, model: f"Can user {action} {model} when is member of staff",
+            ),
+            ("SUPER_STAFF", "superStaff"),
+        ],
         "regular": [("PDF", "pdf")],
     },
     "EXTRA_ACTIONS": {"EXPORT": "export"},

@@ -1,10 +1,49 @@
 import pytest
+from django.contrib.auth.models import Group
 
 from hierarchical_permissions.conf import Action
-from hierarchical_permissions.services import PermissionService
+from hierarchical_permissions.models import UserGroup
+from hierarchical_permissions.services import (
+    PermissionService,
+    PermissionCreationService,
+)
 from test_model_app.models import FakeModel
 
 # test_*ACTION*_permission_for_fakemodel_when_user_in_group_is_granted is broken down for readability
+
+
+@pytest.fixture
+def permission_groups(db, permissions_codenames):
+    _permission_groups = {
+        "Teacher": [
+            {"model": FakeModel, "codenames": ["view_fakemodel"]},
+        ],
+        "Leading teacher": [
+            {
+                "model": FakeModel,
+                "codenames": [
+                    "view_fakemodel",
+                    "change_fakemodel",
+                ],
+            },
+        ],
+        "Mesh administrator": [
+            {
+                "model": FakeModel,
+                "codenames": [
+                    "view_fakemodel",
+                    "change_fakemodel",
+                    "delete_fakemodel",
+                ],
+            },
+        ],
+    }
+    PermissionCreationService.add_permissions_to_permissions_groups(_permission_groups)
+    return {
+        "teacher": Group.objects.get(name="Teacher"),
+        "leading_teacher": Group.objects.get(name="Leading teacher"),
+        "mesh_admin": Group.objects.get(name="Mesh administrator"),
+    }
 
 
 @pytest.mark.parametrize(

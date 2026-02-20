@@ -8,7 +8,7 @@ from hierarchical_permissions.models import OrganizationalUnit, UserGroup
 from hierarchical_permissions.services import PermissionCreationService
 from test_model_app.models import FakeModel
 
-from tests.test_model_app.rules import is_owner
+from tests.test_model_app.rules import is_owner, is_staff, is_staff_and_owner
 
 
 @pytest.fixture
@@ -17,7 +17,7 @@ def users(db):
         username="t_janek", email="janek@example.com", password="admin", is_staff=True
     )
     teacher_franek = User.objects.create_user(
-        username="t_franek", email="franek@example.com", password="admin", is_staff=True
+        username="t_franek", email="franek@example.com", password="admin"
     )
     teacher_piotrek = User.objects.create_user(
         username="t_piotrek",
@@ -46,6 +46,33 @@ def users(db):
         "adm_maciek": adm_maciek,
         "admin": admin,
     }
+
+
+@pytest.fixture
+def user_groups(db, users, organizational_units, permission_groups):
+    ug1 = UserGroup.objects.create()
+    ug1.users.set((users["teacher_janek"],))
+    ug1.organizational_units.set(
+        (organizational_units["csharp"], organizational_units["java"])
+    )
+    ug1.permission_groups.set((permission_groups["leading_teacher"],))
+
+    ug2 = UserGroup.objects.create()
+    ug2.users.set((users["teacher_franek"], users["teacher_janek"]))
+    ug2.organizational_units.set((organizational_units["it_cathedral"],))
+    ug2.permission_groups.set((permission_groups["teacher"],))
+
+    ug3 = UserGroup.objects.create()
+    ug3.users.set((users["adm_maciek"],))
+    ug3.organizational_units.set((organizational_units["it_faculty"],))
+    ug3.permission_groups.set((permission_groups["mesh_admin"],))
+
+    ug4 = UserGroup.objects.create()
+    ug4.users.set((users["teacher_piotrek"], users["teacher_janek"]))
+    ug4.organizational_units.set((organizational_units["physics"],))
+    ug4.permission_groups.set((permission_groups["teacher"],))
+
+    return [ug1, ug2, ug3, ug4]
 
 
 @pytest.fixture
@@ -126,68 +153,6 @@ def organizational_units(db):
 
 
 @pytest.fixture
-def permission_groups(db, permissions_codenames):
-    _permission_groups = {
-        "Teacher": [
-            {"model": FakeModel, "codenames": ["view_fakemodel"]},
-        ],
-        "Leading teacher": [
-            {
-                "model": FakeModel,
-                "codenames": [
-                    "view_fakemodel",
-                    "change_fakemodel",
-                    "owner_delete_fakemodel",
-                ],
-            },
-        ],
-        "Mesh administrator": [
-            {
-                "model": FakeModel,
-                "codenames": [
-                    "view_fakemodel",
-                    "change_fakemodel",
-                    "delete_fakemodel",
-                ],
-            },
-        ],
-    }
-    PermissionCreationService.add_permissions_to_permissions_groups(_permission_groups)
-    return {
-        "teacher": Group.objects.get(name="Teacher"),
-        "leading_teacher": Group.objects.get(name="Leading teacher"),
-        "mesh_admin": Group.objects.get(name="Mesh administrator"),
-    }
-
-
-@pytest.fixture
-def user_groups(db, users, organizational_units, permission_groups):
-    ug1 = UserGroup.objects.create()
-    ug1.users.set((users["teacher_janek"],))
-    ug1.organizational_units.set(
-        (organizational_units["csharp"], organizational_units["java"])
-    )
-    ug1.permission_groups.set((permission_groups["leading_teacher"],))
-
-    ug2 = UserGroup.objects.create()
-    ug2.users.set((users["teacher_franek"], users["teacher_janek"]))
-    ug2.organizational_units.set((organizational_units["it_cathedral"],))
-    ug2.permission_groups.set((permission_groups["teacher"],))
-
-    ug3 = UserGroup.objects.create()
-    ug3.users.set((users["adm_maciek"],))
-    ug3.organizational_units.set((organizational_units["it_faculty"],))
-    ug3.permission_groups.set((permission_groups["mesh_admin"],))
-
-    ug4 = UserGroup.objects.create()
-    ug4.users.set((users["teacher_piotrek"], users["teacher_janek"]))
-    ug4.organizational_units.set((organizational_units["physics"],))
-    ug4.permission_groups.set((permission_groups["teacher"],))
-
-    return [ug1, ug2, ug3, ug4]
-
-
-@pytest.fixture
 def permissions_codenames(db):
     content_type = ContentType.objects.get_for_model(FakeModel)
     # FakeModel._meta.permissions += *PermissionCreationService.create_fields_permissions(FakeModel),
@@ -198,6 +163,22 @@ def permissions_codenames(db):
                 FakeModel._meta.model_name, PermissionType.OWNER
             ),
             [is_owner],
+        ),
+        *PermissionCreationService.add_rules_to_permissions(
+            content_type.app_label,
+            PermissionCreationService.create_crud_permissions_by_type(
+                FakeModel._meta.model_name, PermissionType.STAFF
+            ),
+            [is_staff],
+        ),
+        *PermissionCreationService.add_rules_to_permissions(
+            content_type.app_label,
+            PermissionCreationService.create_crud_permissions_by_type(
+                FakeModel._meta.model_name,
+                PermissionType.SUPER_STAFF,
+                "when is owner and staff member",
+            ),
+            [is_staff_and_owner],
         ),
     )
     for codename, name in permissions:

@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Iterable
 from typing import Any, Callable, Optional
 import rules
@@ -13,6 +14,7 @@ from .models import UserGroup
 from django.contrib.contenttypes.models import ContentType
 
 PermissionChecker = Callable[[Iterable[str], Optional[Any]], bool]
+logger = logging.getLogger(__name__)
 
 
 # Class responsible for checking permissions
@@ -20,7 +22,8 @@ class PermissionService:
     """Class responsible for checking permissions."""
 
     # Fetching UserGroups to optimize process of checking permissions
-    # PermissionService should be singleton/multiton to use the potential of that constructor.
+    # TODO PermissionService should be singleton/multiton to use the potential of that constructor.
+    # TODO Przeanalizować pod kątem optymalizacji
     def __init__(self, user: User):
         self.user = user
         self.user_groups = UserGroup.objects.filter(users=user).prefetch_related(
@@ -67,11 +70,11 @@ class PermissionService:
             return False  # could be unnecessary
         for permission in permissions:
             has_perm = self.has_permission(permission, obj)
-            print("HAS_PERM: ", has_perm)
+            logger.debug("permission: %s has_perm: %s", permission, has_perm)
             if has_perm:
-                test_rule = rules.test_rule(permission, self.user, obj)
-                print("TEST_RULE: ", test_rule)
-                return test_rule
+                if test_rule := rules.test_rule(permission, self.user, obj):
+                    logger.debug("permission: %s test_rule: %s", permission, test_rule)
+                    return True
         return False
 
     def _model_level_has_permission(self, permission):
@@ -164,13 +167,12 @@ class PermissionService:
                     permission_strategy.value
                 )
             ) and permission_checker_function(permissions, obj):
-                # TODO Wprowadzić logowanie
-                print(f"{permission_strategy.value}: ", True)
+                logger.debug("PermissionStrategy: %s", permission_strategy.value)
                 return True
         return False
 
     def has_field_permission_checker(self, model, field_name, obj=None):
-        # Walidacja field_name do napisania
+        # TODO Walidacja field_name do napisania
         content_type = ContentType.objects.get_for_model(model)
         view_permission, change_permission = (
             self.has_perm_checker(
@@ -190,10 +192,12 @@ class PermissionCreationService:
     def create_crud_permissions_by_type(
         model_name: str, permission_type: PermissionType, description: str = None
     ) -> list:
-        # TODO Zastanowić się nad sensem tego sprawdzenia przy obecności description
-        if permission_type not in PERMISSION_TYPES_LABELS.keys():
+        if (
+            permission_type not in PERMISSION_TYPES_LABELS.keys()
+            and description is None
+        ):
             raise KeyError(
-                f"Key {permission_type} doesn't exist in PERMISSION_TYPES_LABELS"
+                f"Key {permission_type} doesn't exist in PERMISSION_TYPES_LABELS and description is None."
             )
         if permission_type == PermissionType.FIELD:
             raise TypeError(

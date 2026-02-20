@@ -52,9 +52,9 @@ def extra_values_dict():
     return {
         Action: 1,
         OrganizationalUnit: 2,
-        PermissionType: 4,
+        PermissionType: 5,
         PERMISSION_TYPES_LABELS_KEY: 1,
-        PermissionStrategy.OBJECT: 2,
+        PermissionStrategy.OBJECT: 3,
         PermissionStrategy.MODEL: 1,
         PermissionStrategy.HARDCODED: 1,
     }
