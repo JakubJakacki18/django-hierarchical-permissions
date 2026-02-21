@@ -10,7 +10,7 @@ from .conf import (
 )
 from .defaults import PermissionStrategy
 from .utils import actions_to_list, permissions_divider
-from .models import UserGroup
+from .models import UserGroup, OrganizationalUnit
 from django.contrib.contenttypes.models import ContentType
 
 PermissionChecker = Callable[[Iterable[str], Optional[Any]], bool]
@@ -55,6 +55,20 @@ class PermissionService:
             for permission in permissions
         ]
 
+    @staticmethod
+    def get_hierarchy_of_organizational_units(
+        obj: Any,
+    ) -> Iterable[OrganizationalUnit]:
+        parent_organizational_unit = obj.parent
+        list_of_organizational_units = parent_organizational_unit.get_ancestors(
+            ascending=True
+        )
+        # In test method get_ancestors() with include_self=True doesn't work
+        list_of_organizational_units = [parent_organizational_unit] + list(
+            list_of_organizational_units
+        )
+        return list_of_organizational_units
+
     def _regular_permissions_checker(
         self, permissions: Iterable[str], obj: Optional[Any]
     ) -> bool:
@@ -83,15 +97,10 @@ class PermissionService:
 
     def _object_level_has_permission(self, permission, obj) -> bool:
         """Check if user has permission in any of his user groups in scope of organizational units"""
-        parent_organizational_unit = obj.parent
-        list_of_organizational_units = parent_organizational_unit.get_ancestors(
-            ascending=True
+        hierarchy_of_organizational_units = (
+            PermissionService.get_hierarchy_of_organizational_units(obj)
         )
-        # In test method get_ancestors() with include_self=True doesn't work
-        list_of_organizational_units = [parent_organizational_unit] + list(
-            list_of_organizational_units
-        )
-        for organizational_unit in list_of_organizational_units:
+        for organizational_unit in hierarchy_of_organizational_units:
             user_groups = UserGroup.objects.filter(
                 users=self.user,
                 organizational_units=organizational_unit,

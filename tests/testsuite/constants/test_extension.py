@@ -53,7 +53,7 @@ def extra_values_dict():
         Action: 1,
         OrganizationalUnit: 2,
         PermissionType: 5,
-        PERMISSION_TYPES_LABELS_KEY: 1,
+        PERMISSION_TYPES_LABELS_KEY: 2,
         PermissionStrategy.OBJECT: 3,
         PermissionStrategy.MODEL: 1,
         PermissionStrategy.HARDCODED: 1,
