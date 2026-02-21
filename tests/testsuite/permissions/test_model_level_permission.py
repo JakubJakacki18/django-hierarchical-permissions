@@ -6,6 +6,7 @@ from hierarchical_permissions.models import UserGroup
 from hierarchical_permissions.services import (
     PermissionService,
     PermissionCreationService,
+    DjangoPermissionRepository,
 )
 from test_model_app.models import FakeModel
 
@@ -59,7 +60,7 @@ def permission_groups(db, permissions_codenames):
 def test_view_permission_for_fakemodel_when_user_in_group_is_granted(
     users, user_groups, person, has_permission
 ):
-    ps = PermissionService(users[person])
+    ps = PermissionService(users[person], DjangoPermissionRepository())
     assert ps.has_perm_to_action(FakeModel, Action.VIEW) is has_permission
 
 
@@ -76,7 +77,7 @@ def test_view_permission_for_fakemodel_when_user_in_group_is_granted(
 def test_change_permission_for_fakemodel_when_user_in_group_is_granted(
     users, user_groups, person, has_permission
 ):
-    ps = PermissionService(users[person])
+    ps = PermissionService(users[person], DjangoPermissionRepository())
     assert ps.has_perm_to_action(FakeModel, Action.CHANGE) is has_permission
 
 
@@ -93,7 +94,7 @@ def test_change_permission_for_fakemodel_when_user_in_group_is_granted(
 def test_delete_permission_for_fakemodel_when_user_in_group_is_granted(
     users, user_groups, person, has_permission
 ):
-    ps = PermissionService(users[person])
+    ps = PermissionService(users[person], DjangoPermissionRepository())
     assert ps.has_perm_to_action(FakeModel, Action.DELETE) is has_permission
 
 
@@ -110,5 +111,5 @@ def test_delete_permission_for_fakemodel_when_user_in_group_is_granted(
 def test_add_permission_for_fakemodel_when_user_in_group_is_granted(
     users, user_groups, person, has_permission
 ):
-    ps = PermissionService(users[person])
+    ps = PermissionService(users[person], DjangoPermissionRepository())
     assert ps.has_perm_to_action(FakeModel, Action.ADD) is has_permission
