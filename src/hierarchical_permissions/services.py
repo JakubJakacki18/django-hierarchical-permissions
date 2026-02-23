@@ -1,7 +1,10 @@
+import logging
 from collections.abc import Iterable
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, Protocol
 import rules
 from django.contrib.auth.models import User, Permission
+from django.db.models import QuerySet
+
 from .conf import (
     PERMISSION_TYPES_LABELS,
     Action,
@@ -9,101 +12,49 @@ from .conf import (
 )
 from .defaults import PermissionStrategy
 from .utils import actions_to_list, permissions_divider
-from .models import UserGroup
+from .models import UserGroup, OrganizationalUnit
 from django.contrib.contenttypes.models import ContentType
 
-PermissionChecker = Callable[[Iterable[str], Optional[Any]], bool]
+logger = logging.getLogger(__name__)
 
 
-# Class responsible for checking permissions
+class PermissionRepository(Protocol):
+    def get_user_groups(self, user: User) -> Iterable[UserGroup]: ...
+    def get_all_permissions_for_model(
+        self, model, fields_included, action
+    ) -> Iterable[str]: ...
+    def get_permissions_from_user_groups(
+        self,
+        user_groups: Iterable[UserGroup],
+    ) -> set[str]: ...
+
+
 class PermissionService:
     """Class responsible for checking permissions."""
 
-    # Fetching UserGroups to optimize process of checking permissions
-    # PermissionService should be singleton/multiton to use the potential of that constructor.
-    def __init__(self, user: User):
+    # TODO Przeanalizować pod kątem optymalizacji, rozważyć cache/inny czas życia
+    def __init__(self, user: User, repository: PermissionRepository):
         self.user = user
-        self.user_groups = UserGroup.objects.filter(users=user).prefetch_related(
-            "permission_groups", "organizational_units"
-        )
+        self._repository = repository
+        self._user_groups = None
 
         self.permissions_checker_functions: dict[
-            PermissionStrategy, PermissionChecker
+            PermissionStrategy, PermissionCheckerStrategy
         ] = {
-            PermissionStrategy.MODEL: self._regular_permissions_checker,
-            PermissionStrategy.OBJECT: self._olp_permissions_checker,
-            # TODO Koncept i zasada działania do ponownego przemyślenia
-            PermissionStrategy.HARDCODED: self._hardcoded_permissions_checker,
+            PermissionStrategy.MODEL: RegularPermissionCheckerStrategy,
+            PermissionStrategy.OBJECT: ObjectPermissionCheckerStrategy,
+            PermissionStrategy.HARDCODED: HardcodedPermissionCheckerStrategy,
         }
 
-    @staticmethod
-    def get_all_permissions_for_model(model, fields_included=False, action=None):
-        """Get all permissions for model. Use ``action`` argument to filter all permissions"""
-        content_type = ContentType.objects.get_for_model(model)
-        permissions = Permission.objects.filter(content_type=content_type)
-        if action:
-            permissions = permissions.filter(codename__contains=action.value)
-        if not fields_included:
-            permissions = permissions.exclude(
-                codename__startswith=PermissionType.FIELD.value
-            )
-        return [
-            f"{content_type.app_label}.{permission.codename}"
-            for permission in permissions
-        ]
+    @property
+    def user_groups(self):
+        if self._user_groups is None:
+            self._user_groups = self._repository.get_user_groups(self.user)
+        return self._user_groups
 
-    def _regular_permissions_checker(
-        self, permissions: Iterable[str], obj: Optional[Any]
+    def _is_permission_in_user_groups(
+        self, permission: str, user_groups: QuerySet[UserGroup]
     ) -> bool:
-        """Check regular permissions"""
-        return any(self.has_permission(permission, obj) for permission in permissions)
-
-    def _olp_permissions_checker(
-        self, permissions: Iterable[str], obj: Optional[Any]
-    ) -> bool:
-        """Check OLP (Object Level Permission)"""
-        # print(f"Sprawdzane olp uprawnien: {permissions}")
-        if obj is None:
-            return False  # could be unnecessary
-        for permission in permissions:
-            has_perm = self.has_permission(permission, obj)
-            print("HAS_PERM: ", has_perm)
-            if has_perm:
-                test_rule = rules.test_rule(permission, self.user, obj)
-                print("TEST_RULE: ", test_rule)
-                return test_rule
-        return False
-
-    def _model_level_has_permission(self, permission):
-        """Check if user has permission in any of his user groups."""
-        return self._is_permission_in_user_groups(permission, self.user_groups)
-
-    def _object_level_has_permission(self, permission, obj) -> bool:
-        """Check if user has permission in any of his user groups in scope of organizational units"""
-        parent_organizational_unit = obj.parent
-        list_of_organizational_units = parent_organizational_unit.get_ancestors(
-            ascending=True
-        )
-        # In test method get_ancestors() with include_self=True doesn't work
-        list_of_organizational_units = [parent_organizational_unit] + list(
-            list_of_organizational_units
-        )
-        for organizational_unit in list_of_organizational_units:
-            user_groups = UserGroup.objects.filter(
-                users=self.user,
-                organizational_units=organizational_unit,
-            )
-            if self._is_permission_in_user_groups(permission, user_groups):
-                return True
-        return False
-
-    def _hardcoded_permissions_checker(
-        self, permissions: Iterable[str], obj: Optional[Any]
-    ):
-        return any(self.user.has_perm(permission, obj) for permission in permissions)
-
-    @staticmethod
-    def _is_permission_in_user_groups(permission, user_groups) -> bool:
         """
         Check if permission is in any of user groups.
 
@@ -114,18 +65,41 @@ class PermissionService:
         Returns:
             bool: True if user has permission, False otherwise.
         """
-        permission_groups_set = set()
-        for user_group in user_groups:
-            permission_groups_set.update(user_group.permission_groups.all())
-        permissions_set = set()
-        for group in permission_groups_set:
-            perms = group.permissions.all()
-            formatted_perms = {
-                f"{perm.content_type.app_label}.{perm.codename}" for perm in perms
-            }
-            permissions_set.update(formatted_perms)
-        if permission in permissions_set:
-            return True
+        permissions_in_user_groups = self._repository.get_permissions_from_user_groups(
+            user_groups
+        )
+        return permission in permissions_in_user_groups
+
+    @staticmethod
+    def get_hierarchy_of_organizational_units(
+        obj: Any,
+    ) -> Iterable[OrganizationalUnit]:
+        parent_organizational_unit = obj.parent
+        list_of_organizational_units = parent_organizational_unit.get_ancestors(
+            ascending=True
+        )
+        # In test method get_ancestors() with include_self=True doesn't work
+        list_of_organizational_units = [parent_organizational_unit] + list(
+            list_of_organizational_units
+        )
+        return list_of_organizational_units
+
+    def _model_level_has_permission(self, permission):
+        """Check if user has permission in any of his user groups."""
+        return self._is_permission_in_user_groups(permission, self.user_groups)
+
+    def _object_level_has_permission(self, permission, obj) -> bool:
+        """Check if user has permission in any of his user groups in scope of organizational units"""
+        hierarchy_of_organizational_units = (
+            PermissionService.get_hierarchy_of_organizational_units(obj)
+        )
+        for organizational_unit in hierarchy_of_organizational_units:
+            user_groups = UserGroup.objects.filter(
+                users=self.user,
+                organizational_units=organizational_unit,
+            )
+            if self._is_permission_in_user_groups(permission, user_groups):
+                return True
         return False
 
     def has_permission(self, permission, obj=None):
@@ -145,7 +119,7 @@ class PermissionService:
         # print("Obj", obj)
         # print("Action", action)
         # print("------------------------------------\n")
-        all_permissions_for_model = PermissionService.get_all_permissions_for_model(
+        all_permissions_for_model = self._repository.get_all_permissions_for_model(
             model, False, action
         )
         return self.has_perm_checker(obj, *all_permissions_for_model)
@@ -163,14 +137,13 @@ class PermissionService:
                 permissions := permissions_divider_by_strategy.get(
                     permission_strategy.value
                 )
-            ) and permission_checker_function(permissions, obj):
-                # TODO Wprowadzić logowanie
-                print(f"{permission_strategy.value}: ", True)
+            ) and permission_checker_function.check(permissions, obj, self):
+                logger.debug("PermissionStrategy: %s", permission_strategy.value)
                 return True
         return False
 
     def has_field_permission_checker(self, model, field_name, obj=None):
-        # Walidacja field_name do napisania
+        # TODO Walidacja field_name do napisania
         content_type = ContentType.objects.get_for_model(model)
         view_permission, change_permission = (
             self.has_perm_checker(
@@ -190,10 +163,12 @@ class PermissionCreationService:
     def create_crud_permissions_by_type(
         model_name: str, permission_type: PermissionType, description: str = None
     ) -> list:
-        # TODO Zastanowić się nad sensem tego sprawdzenia przy obecności description
-        if permission_type not in PERMISSION_TYPES_LABELS.keys():
+        if (
+            permission_type not in PERMISSION_TYPES_LABELS.keys()
+            and description is None
+        ):
             raise KeyError(
-                f"Key {permission_type} doesn't exist in PERMISSION_TYPES_LABELS"
+                f"Key {permission_type} doesn't exist in PERMISSION_TYPES_LABELS and description is None."
             )
         if permission_type == PermissionType.FIELD:
             raise TypeError(
@@ -311,3 +286,91 @@ class PermissionCreationService:
                         codename=codename, content_type=content_type
                     )
                     group.permissions.add(permission)
+
+
+class DjangoPermissionRepository:
+    @staticmethod
+    def get_all_permissions_for_model(model, fields_included=False, action=None):
+        """Get all permissions for model. Use ``action`` argument to filter all permissions"""
+        content_type = ContentType.objects.get_for_model(model)
+        permissions = Permission.objects.filter(content_type=content_type)
+        if action:
+            permissions = permissions.filter(codename__contains=action.value)
+        if not fields_included:
+            permissions = permissions.exclude(
+                codename__startswith=PermissionType.FIELD.value
+            )
+        return [
+            f"{content_type.app_label}.{permission.codename}"
+            for permission in permissions
+        ]
+
+    @staticmethod
+    def get_user_groups(user: User) -> Iterable[UserGroup]:
+        return UserGroup.objects.filter(users=user).prefetch_related(
+            "permission_groups", "organizational_units"
+        )
+
+    @staticmethod
+    def get_permissions_from_user_groups(
+        user_groups: Iterable[UserGroup],
+    ) -> set[str]:
+        permission_groups_set = set()
+        for user_group in user_groups:
+            permission_groups_set.update(user_group.permission_groups.all())
+        permissions_set = set()
+        for group in permission_groups_set:
+            perms = group.permissions.all()
+            formatted_perms = {
+                f"{perm.content_type.app_label}.{perm.codename}" for perm in perms
+            }
+            permissions_set.update(formatted_perms)
+        return permissions_set
+
+class PermissionCheckerStrategy(Protocol):
+    @staticmethod
+    def check(
+        permissions: Iterable[str], obj: Optional[Any], service: PermissionService
+    ) -> bool: ...
+
+
+class RegularPermissionCheckerStrategy:
+    @staticmethod
+    def check(
+        permissions: Iterable[str], obj: Optional[Any], service: PermissionService
+    ) -> bool:
+        """Check regular permissions"""
+        return any(
+            service.has_permission(permission, obj) for permission in permissions
+        )
+
+
+class ObjectPermissionCheckerStrategy:
+    @staticmethod
+    def check(
+        permissions: Iterable[str], obj: Optional[Any], service: PermissionService
+    ) -> bool:
+        """Check OLP (Object Level Permission)"""
+        # print(f"Sprawdzane olp uprawnień: {permissions}")
+        if obj is None:
+            return False  # could be unnecessary
+        for permission in permissions:
+            has_perm = service.has_permission(permission, obj)
+            logger.debug("permission: %s has_perm: %s", permission, has_perm)
+            if has_perm:
+                if test_rule := rules.test_rule(permission, service.user, obj):
+                    logger.debug("permission: %s test_rule: %s", permission, test_rule)
+                    return True
+        return False
+
+
+class HardcodedPermissionCheckerStrategy:
+    @staticmethod
+    def check(
+        permissions: Iterable[str], obj: Optional[Any], service: PermissionService
+    ) -> bool:
+        # TODO Koncept i zasada działania do ponownego przemyślenia
+        logger.warning("Checking of hardcoded permissions are not implemented yet.")
+        return False
+
+        # return any(self.user.has_perm(permission, obj) for permission in permissions)
