@@ -3,6 +3,8 @@ from collections.abc import Iterable
 from typing import Any, Callable, Optional, Protocol
 import rules
 from django.contrib.auth.models import User, Permission
+from django.db.models import QuerySet
+
 from .conf import (
     PERMISSION_TYPES_LABELS,
     Action,
@@ -21,17 +23,20 @@ class PermissionRepository(Protocol):
     def get_all_permissions_for_model(
         self, model, fields_included, action
     ) -> Iterable[str]: ...
+    def get_permissions_from_user_groups(
+        self,
+        user_groups: Iterable[UserGroup],
+    ) -> set[str]: ...
 
 
 class PermissionService:
     """Class responsible for checking permissions."""
 
-    # Fetching UserGroups to optimize process of checking permissions
     # TODO Przeanalizować pod kątem optymalizacji, rozważyć cache/inny czas życia
     def __init__(self, user: User, repository: PermissionRepository):
         self.user = user
         self._repository = repository
-        self._user_groups = None  #    lazy cache
+        self._user_groups = None
 
         self.permissions_checker_functions: dict[
             PermissionStrategy, PermissionCheckerStrategy
@@ -47,8 +52,9 @@ class PermissionService:
             self._user_groups = self._repository.get_user_groups(self.user)
         return self._user_groups
 
-    @staticmethod
-    def _is_permission_in_user_groups(permission, user_groups) -> bool:
+    def _is_permission_in_user_groups(
+        self, permission: str, user_groups: QuerySet[UserGroup]
+    ) -> bool:
         """
         Check if permission is in any of user groups.
 
@@ -59,19 +65,10 @@ class PermissionService:
         Returns:
             bool: True if user has permission, False otherwise.
         """
-        permission_groups_set = set()
-        for user_group in user_groups:
-            permission_groups_set.update(user_group.permission_groups.all())
-        permissions_set = set()
-        for group in permission_groups_set:
-            perms = group.permissions.all()
-            formatted_perms = {
-                f"{perm.content_type.app_label}.{perm.codename}" for perm in perms
-            }
-            permissions_set.update(formatted_perms)
-        if permission in permissions_set:
-            return True
-        return False
+        permissions_in_user_groups = self._repository.get_permissions_from_user_groups(
+            user_groups
+        )
+        return permission in permissions_in_user_groups
 
     @staticmethod
     def get_hierarchy_of_organizational_units(
@@ -314,6 +311,21 @@ class DjangoPermissionRepository:
             "permission_groups", "organizational_units"
         )
 
+    @staticmethod
+    def get_permissions_from_user_groups(
+        user_groups: Iterable[UserGroup],
+    ) -> set[str]:
+        permission_groups_set = set()
+        for user_group in user_groups:
+            permission_groups_set.update(user_group.permission_groups.all())
+        permissions_set = set()
+        for group in permission_groups_set:
+            perms = group.permissions.all()
+            formatted_perms = {
+                f"{perm.content_type.app_label}.{perm.codename}" for perm in perms
+            }
+            permissions_set.update(formatted_perms)
+        return permissions_set
 
 class PermissionCheckerStrategy(Protocol):
     @staticmethod
@@ -358,5 +370,7 @@ class HardcodedPermissionCheckerStrategy:
         permissions: Iterable[str], obj: Optional[Any], service: PermissionService
     ) -> bool:
         # TODO Koncept i zasada działania do ponownego przemyślenia
-        raise NotImplementedError()
+        logger.warning("Checking of hardcoded permissions are not implemented yet.")
+        return False
+
         # return any(self.user.has_perm(permission, obj) for permission in permissions)
