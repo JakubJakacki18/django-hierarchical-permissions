@@ -10,8 +10,6 @@ from hierarchical_permissions.services import (
 )
 from test_model_app.models import FakeModel
 
-# test_*ACTION*_permission_for_fakemodel_when_user_in_group_is_granted is broken down for readability
-
 
 @pytest.fixture
 def permission_groups(db, permissions_codenames):
@@ -48,68 +46,82 @@ def permission_groups(db, permissions_codenames):
 
 
 @pytest.mark.parametrize(
-    "person,has_permission",
+    "person,action,has_permission",
     [
-        ("teacher_janek", True),
-        ("teacher_franek", True),
-        ("teacher_piotrek", True),
-        ("adm_maciek", True),
-        ("admin", True),
+        ("teacher_janek", Action.VIEW, True),
+        ("teacher_franek", Action.VIEW, True),
+        ("teacher_piotrek", Action.VIEW, True),
+        ("adm_maciek", Action.VIEW, True),
+        ("admin", Action.VIEW, True),
+        ("teacher_janek", Action.CHANGE, True),
+        ("teacher_franek", Action.CHANGE, False),
+        ("teacher_piotrek", Action.CHANGE, False),
+        ("adm_maciek", Action.CHANGE, True),
+        ("admin", Action.CHANGE, True),
+        ("teacher_janek", Action.DELETE, False),
+        ("teacher_franek", Action.DELETE, False),
+        ("teacher_piotrek", Action.DELETE, False),
+        ("adm_maciek", Action.DELETE, True),
+        ("admin", Action.DELETE, True),
+        ("teacher_janek", Action.ADD, False),
+        ("teacher_franek", Action.ADD, False),
+        ("teacher_piotrek", Action.ADD, False),
+        ("adm_maciek", Action.ADD, False),
+        ("admin", Action.ADD, True),
+        ("teacher_janek", Action.EXPORT, False),
+        ("teacher_franek", Action.EXPORT, False),
+        ("teacher_piotrek", Action.EXPORT, False),
+        ("adm_maciek", Action.EXPORT, True),
+        ("admin", Action.EXPORT, True),
     ],
 )
-def test_view_permission_for_fakemodel_when_user_in_group_is_granted(
-    users, user_groups, person, has_permission
+def test_has_perm_to_action_for_fakemodel_when_user_in_group_is_granted(
+    users, user_groups, person, has_permission, action
 ):
     ps = PermissionService(users[person], DjangoPermissionRepository())
-    assert ps.has_perm_to_action(FakeModel, Action.VIEW) is has_permission
+    assert ps.has_perm_to_action(FakeModel, action) is has_permission
 
 
 @pytest.mark.parametrize(
-    "person,has_permission",
+    "person,permission_codenames,has_permission",
     [
-        ("teacher_janek", True),
-        ("teacher_franek", False),
-        ("teacher_piotrek", False),
-        ("adm_maciek", True),
-        ("admin", True),
+        (
+            "teacher_janek",
+            ("test_model_app.view_fakemodel",),
+            True,
+        ),
+        ("teacher_franek", ("test_model_app.view_fakemodel",), True),
+        ("teacher_piotrek", ("test_model_app.view_fakemodel",), True),
+        ("adm_maciek", ("test_model_app.view_fakemodel",), True),
+        ("admin", ("test_model_app.view_fakemodel",), True),
+        ("teacher_janek", ("test_model_app.change_fakemodel",), True),
+        ("teacher_franek", ("test_model_app.change_fakemodel",), False),
+        ("teacher_piotrek", ("test_model_app.change_fakemodel",), False),
+        ("adm_maciek", ("test_model_app.change_fakemodel",), True),
+        ("admin", ("test_model_app.change_fakemodel",), True),
+        ("teacher_janek", ("test_model_app.delete_fakemodel",), False),
+        ("teacher_franek", ("test_model_app.delete_fakemodel",), False),
+        ("teacher_piotrek", ("test_model_app.delete_fakemodel",), False),
+        ("adm_maciek", ("test_model_app.delete_fakemodel",), True),
+        ("admin", ("test_model_app.delete_fakemodel",), True),
+        ("teacher_janek", ("test_model_app.add_fakemodel",), False),
+        ("teacher_franek", ("test_model_app.add_fakemodel",), False),
+        ("teacher_piotrek", ("test_model_app.add_fakemodel",), False),
+        ("adm_maciek", ("test_model_app.add_fakemodel",), False),
+        ("admin", ("test_model_app.add_fakemodel",), True),
     ],
 )
-def test_change_permission_for_fakemodel_when_user_in_group_is_granted(
-    users, user_groups, person, has_permission
+def test_has_perm_by_permissions_for_fakemodel_when_user_in_group_is_granted(
+    users, user_groups, person, permission_codenames, has_permission
 ):
     ps = PermissionService(users[person], DjangoPermissionRepository())
-    assert ps.has_perm_to_action(FakeModel, Action.CHANGE) is has_permission
+    assert (
+        ps.has_perm_by_permissions_codenames(None, *permission_codenames)
+        is has_permission
+    )
 
 
-@pytest.mark.parametrize(
-    "person,has_permission",
-    [
-        ("teacher_janek", False),
-        ("teacher_franek", False),
-        ("teacher_piotrek", False),
-        ("adm_maciek", True),
-        ("admin", True),
-    ],
-)
-def test_delete_permission_for_fakemodel_when_user_in_group_is_granted(
-    users, user_groups, person, has_permission
-):
-    ps = PermissionService(users[person], DjangoPermissionRepository())
-    assert ps.has_perm_to_action(FakeModel, Action.DELETE) is has_permission
-
-
-@pytest.mark.parametrize(
-    "person,has_permission",
-    [
-        ("teacher_janek", False),
-        ("teacher_franek", False),
-        ("teacher_piotrek", False),
-        ("adm_maciek", False),
-        ("admin", True),
-    ],
-)
-def test_add_permission_for_fakemodel_when_user_in_group_is_granted(
-    users, user_groups, person, has_permission
-):
-    ps = PermissionService(users[person], DjangoPermissionRepository())
-    assert ps.has_perm_to_action(FakeModel, Action.ADD) is has_permission
+# def test_has_perm_checker_for_fakemodel_and_custom_action_when_user_in_group_is_granted(
+#     users, user_groups, person, permission_codenames, has_permission
+# ):
+#     pass

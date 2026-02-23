@@ -11,7 +11,11 @@ from .conf import (
     PermissionType,
 )
 from .defaults import PermissionStrategy
-from .utils import actions_to_list, permissions_divider
+from .utils import (
+    actions_to_list,
+    permissions_divider,
+    get_hierarchy_of_organizational_units,
+)
 from .models import UserGroup, OrganizationalUnit
 from django.contrib.contenttypes.models import ContentType
 
@@ -27,6 +31,12 @@ class PermissionRepository(Protocol):
         self,
         user_groups: Iterable[UserGroup],
     ) -> set[str]: ...
+    def check_user_has_permission(
+        self,
+        user: User,
+        permission: str,
+        organizational_unit: Optional[Iterable[OrganizationalUnit]] = None,
+    ) -> bool: ...
 
 
 class PermissionService:
@@ -70,39 +80,19 @@ class PermissionService:
         )
         return permission in permissions_in_user_groups
 
-    @staticmethod
-    def get_hierarchy_of_organizational_units(
-        obj: Any,
-    ) -> Iterable[OrganizationalUnit]:
-        parent_organizational_unit = obj.parent
-        list_of_organizational_units = parent_organizational_unit.get_ancestors(
-            ascending=True
-        )
-        # In test method get_ancestors() with include_self=True doesn't work
-        list_of_organizational_units = [parent_organizational_unit] + list(
-            list_of_organizational_units
-        )
-        return list_of_organizational_units
-
-    def _model_level_has_permission(self, permission):
+    def _model_level_has_permission(self, permission) -> bool:
         """Check if user has permission in any of his user groups."""
-        return self._is_permission_in_user_groups(permission, self.user_groups)
+        # return self._repository.check_user_has_permission(permission, self.user_groups)
+        return self._repository.check_user_has_permission(self.user, permission)
 
     def _object_level_has_permission(self, permission, obj) -> bool:
         """Check if user has permission in any of his user groups in scope of organizational units"""
-        hierarchy_of_organizational_units = (
-            PermissionService.get_hierarchy_of_organizational_units(obj)
+        hierarchy_of_organizational_units = get_hierarchy_of_organizational_units(obj)
+        return self._repository.check_user_has_permission(
+            self.user, permission, hierarchy_of_organizational_units
         )
-        for organizational_unit in hierarchy_of_organizational_units:
-            user_groups = UserGroup.objects.filter(
-                users=self.user,
-                organizational_units=organizational_unit,
-            )
-            if self._is_permission_in_user_groups(permission, user_groups):
-                return True
-        return False
 
-    def has_permission(self, permission, obj=None):
+    def has_permission(self, permission, obj=None) -> bool:
         if obj is not None and (not hasattr(obj, "parent") or not obj.parent):
             raise AttributeError(
                 f"{obj.__class__.__module__}.{obj.__class__.__name__} doesn't have parent attribute or parent is null."
@@ -113,7 +103,7 @@ class PermissionService:
             else self._model_level_has_permission(permission)
         )
 
-    def has_perm_to_action(self, model, action: Action, obj=None):
+    def has_perm_to_action(self, model, action: Action, obj=None) -> bool:
         # print("------------------------------------\n")
         # print("Model", model)
         # print("Obj", obj)
@@ -122,9 +112,9 @@ class PermissionService:
         all_permissions_for_model = self._repository.get_all_permissions_for_model(
             model, False, action
         )
-        return self.has_perm_checker(obj, *all_permissions_for_model)
+        return self.has_perm_by_permissions_codenames(obj, *all_permissions_for_model)
 
-    def has_perm_checker(self, obj, *permissions):
+    def has_perm_by_permissions_codenames(self, obj, *permissions) -> bool:
         if self.user.is_superuser:
             return True
         permissions_divider_by_strategy = permissions_divider(*permissions)
@@ -146,7 +136,7 @@ class PermissionService:
         # TODO Walidacja field_name do napisania
         content_type = ContentType.objects.get_for_model(model)
         view_permission, change_permission = (
-            self.has_perm_checker(
+            self.has_perm_by_permissions_codenames(
                 obj,
                 f"{content_type.app_label}.{PermissionType.FIELD.value}_{field_name}_{action.value}_{model.__name__.lower()}",
             )
@@ -326,6 +316,29 @@ class DjangoPermissionRepository:
             }
             permissions_set.update(formatted_perms)
         return permissions_set
+
+    @staticmethod
+    def check_user_has_permission(
+        user: User,
+        permission: str,
+        organizational_unit: Optional[Iterable[OrganizationalUnit]] = None,
+    ) -> bool:
+        app_label, codename = permission.split(".")
+
+        filters: dict[str, Any] = {
+            "codename": codename,
+            "content_type__app_label": app_label,
+            "group__user_groups__users": user,
+        }
+
+        if organizational_unit:
+            filters["group__user_groups__organizational_units__in"] = (
+                organizational_unit
+            )
+        query = Permission.objects.filter(**filters)
+        print(str(query.query))
+        return Permission.objects.filter(**filters).exists()
+
 
 class PermissionCheckerStrategy(Protocol):
     @staticmethod

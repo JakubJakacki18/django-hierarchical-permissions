@@ -1,5 +1,9 @@
+from collections.abc import Iterable
+from typing import Any
+
 from django.db import models
 from .conf import PERMISSION_DIVIDER_BY_STRATEGY, Action
+from .models import OrganizationalUnit
 
 
 def permission_extractor(self, *permissions_in_fun_or_args):
@@ -66,6 +70,20 @@ def get_model(model_or_obj):
         return model_or_obj.__class__
     else:
         return model_or_obj
+
+
+def get_hierarchy_of_organizational_units(
+    obj: Any,
+) -> Iterable[OrganizationalUnit]:
+    parent_organizational_unit = obj.parent
+    list_of_organizational_units = parent_organizational_unit.get_ancestors(
+        ascending=True
+    )
+    # In test method get_ancestors() with include_self=True doesn't work
+    list_of_organizational_units = [parent_organizational_unit] + list(
+        list_of_organizational_units
+    )
+    return list_of_organizational_units
 
 
 # def get_organizational_unit_choices() -> list[tuple[str, str]]:
