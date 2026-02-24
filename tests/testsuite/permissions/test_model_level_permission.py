@@ -3,10 +3,9 @@ from django.contrib.auth.models import Group
 
 from hierarchical_permissions.conf import Action
 from hierarchical_permissions.models import UserGroup
+from hierarchical_permissions.checker import PermissionChecker
 from hierarchical_permissions.services import (
-    PermissionService,
     PermissionCreationService,
-    DjangoPermissionRepository,
 )
 from test_model_app.models import FakeModel
 
@@ -78,8 +77,8 @@ def permission_groups(db, permissions_codenames):
 def test_has_perm_to_action_for_fakemodel_when_user_in_group_is_granted(
     users, user_groups, person, has_permission, action
 ):
-    ps = PermissionService(users[person], DjangoPermissionRepository())
-    assert ps.has_perm_to_action(FakeModel, action) is has_permission
+    perm_checker = PermissionChecker(users[person])
+    assert perm_checker.has_perm_to_action(FakeModel, action) is has_permission
 
 
 @pytest.mark.parametrize(
@@ -114,9 +113,9 @@ def test_has_perm_to_action_for_fakemodel_when_user_in_group_is_granted(
 def test_has_perm_by_permissions_for_fakemodel_when_user_in_group_is_granted(
     users, user_groups, person, permission_codenames, has_permission
 ):
-    ps = PermissionService(users[person], DjangoPermissionRepository())
+    perm_checker = PermissionChecker(users[person])
     assert (
-        ps.has_perm_by_permissions_codenames(None, *permission_codenames)
+        perm_checker.has_perm_by_permissions_codenames(None, *permission_codenames)
         is has_permission
     )
 

@@ -1,8 +1,11 @@
+import logging
 from typing import Type
 from django.db.models import Model
 from .conf import Action
-from .services import PermissionService
+from .checker import PermissionChecker
 from .decorators import has_perm_checker_decorator
+
+logger = logging.getLogger(__name__)
 
 
 # Approach with decorator.
@@ -46,34 +49,34 @@ class BaseAdminMixin:
     model = Type[Model]
 
     def has_add_permission(self, request):
-        perm_service = PermissionService(request.user)
-        return perm_service.has_perm_to_action(self.model, Action.ADD)
+        perm_checker = PermissionChecker(request.user)
+        return perm_checker.has_perm_to_action(self.model, Action.ADD)
 
     def has_delete_permission(self, request, obj=None):
-        perm_service = PermissionService(request.user)
-        return perm_service.has_perm_to_action(self.model, Action.DELETE, obj)
+        perm_checker = PermissionChecker(request.user)
+        return perm_checker.has_perm_to_action(self.model, Action.DELETE, obj)
 
     def has_change_permission(self, request, obj=None):
-        perm_service = PermissionService(request.user)
-        return perm_service.has_perm_to_action(self.model, Action.CHANGE, obj)
+        perm_checker = PermissionChecker(request.user)
+        return perm_checker.has_perm_to_action(self.model, Action.CHANGE, obj)
 
     def has_view_permission(self, request, obj=None):
-        perm_service = PermissionService(request.user)
-        return perm_service.has_perm_to_action(self.model, Action.VIEW, obj)
+        perm_checker = PermissionChecker(request.user)
+        return perm_checker.has_perm_to_action(self.model, Action.VIEW, obj)
 
     def has_module_permission(self, request):
         if request.user.is_authenticated:
-            perm_service = PermissionService(request.user)
-            return perm_service.has_perm_to_action(self.model, Action.VIEW)
+            perm_checker = PermissionChecker(request.user)
+            return perm_checker.has_perm_to_action(self.model, Action.VIEW)
         return False
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        perm_service = PermissionService(request.user)
+        perm_checker = PermissionChecker(request.user)
         # Heavy but easy to implement. In the future I suggest optimization.
         allowed_ids = [
             obj.id
             for obj in qs
-            if perm_service.has_perm_to_action(self.model, Action.VIEW, obj)
+            if perm_checker.has_perm_to_action(self.model, Action.VIEW, obj)
         ]
         return qs.filter(id__in=allowed_ids)
