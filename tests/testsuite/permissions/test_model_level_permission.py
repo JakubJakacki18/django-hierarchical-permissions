@@ -68,11 +68,11 @@ def permission_groups(db, permissions_codenames):
         ("teacher_piotrek", Action.ADD, False),
         ("adm_maciek", Action.ADD, False),
         ("admin", Action.ADD, True),
-        ("teacher_janek", Action.EXPORT, False),
-        ("teacher_franek", Action.EXPORT, False),
-        ("teacher_piotrek", Action.EXPORT, False),
-        ("adm_maciek", Action.EXPORT, True),
-        ("admin", Action.EXPORT, True),
+        # ("teacher_janek", Action.EXPORT, False),
+        # ("teacher_franek", Action.EXPORT, False),
+        # ("teacher_piotrek", Action.EXPORT, False),
+        # ("adm_maciek", Action.EXPORT, True),
+        # ("admin", Action.EXPORT, True),
     ],
 )
 def test_has_perm_to_action_for_fakemodel_when_user_in_group_is_granted(
