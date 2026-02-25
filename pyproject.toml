@@ -1,6 +1,6 @@
 [project]
 name = "django-hierarchical-permissions"
-version = "0.0.2"
+version = "0.0.3"
 description = ""
 authors = [
     { name = "JakubJakacki18", email = "jakub.jakacki18@gmail.com" },

@@ -23,20 +23,6 @@ def _create_enum(name, base_data, user_data):
     return Enum(name, combined_data, type=str)
 
 
-def _merge_dicts(base, user):
-    merged = base.copy()
-    if user:
-        merged.update(user)
-    return MappingProxyType(merged)
-
-
-def _merge_lists(base, user):
-    merged = list(base)
-    if user:
-        merged.extend(user)
-    return tuple(merged)
-
-
 def _init_permission_types():
     user_subtypes_with_labels = get_user_setting("EXTRA_PERMISSION_TYPES", {})
     permission_levels = [e for e in PermissionStrategy]

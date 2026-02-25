@@ -46,6 +46,8 @@ def create_crud_permissions_by_type(
     return permissions_list
 
 
+# TODO przemyśleć czy uprawnienia typu fields nie powinny być bardziej dynamiczne
+#  czy powinny przyjmować akcje inne niż view/change
 def create_fields_permissions(model) -> list:
     if PermissionType.FIELD not in PERMISSION_TYPES_LABELS.keys():
         raise KeyError(
