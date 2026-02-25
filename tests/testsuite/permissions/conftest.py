@@ -4,7 +4,10 @@ from django.contrib.auth.models import User, Group, Permission
 from django.contrib.contenttypes.models import ContentType
 
 from hierarchical_permissions.conf import PermissionType
-from hierarchical_permissions.creators import create_crud_permissions_by_type
+from hierarchical_permissions.creators import (
+    create_crud_permissions_by_type,
+    create_fields_permissions,
+)
 from hierarchical_permissions.models import OrganizationalUnit, UserGroup
 from hierarchical_permissions.services import (
     add_rules_to_permissions,
@@ -158,7 +161,6 @@ def organizational_units(db):
 @pytest.fixture
 def permissions_codenames(db):
     content_type = ContentType.objects.get_for_model(FakeModel)
-    # FakeModel._meta.permissions += *PermissionCreationService.create_fields_permissions(FakeModel),
     permissions = (
         *add_rules_to_permissions(
             content_type.app_label,
@@ -183,6 +185,7 @@ def permissions_codenames(db):
             ),
             [is_staff_and_owner],
         ),
+        *create_fields_permissions(FakeModel),
     )
     for codename, name in permissions:
         Permission.objects.get_or_create(
@@ -192,7 +195,10 @@ def permissions_codenames(db):
     yield
     for codename, _ in permissions:
         rule_name = f"{content_type.app_label}.{codename}"
-        rules.remove_rule(rule_name)
+        try:
+            rules.remove_rule(rule_name)
+        except KeyError:
+            pass
 
 
 @pytest.fixture

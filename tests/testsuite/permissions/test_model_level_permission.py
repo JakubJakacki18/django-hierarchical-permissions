@@ -30,6 +30,8 @@ def permission_groups(db, permissions_codenames):
                     "view_fakemodel",
                     "change_fakemodel",
                     "delete_fakemodel",
+                    "export_fakemodel",
+                    "field_name_view_fakemodel",
                 ],
             },
         ],
@@ -65,11 +67,6 @@ def permission_groups(db, permissions_codenames):
         ("teacher_piotrek", Action.ADD, False),
         ("adm_maciek", Action.ADD, False),
         ("admin", Action.ADD, True),
-        # ("teacher_janek", Action.EXPORT, False),
-        # ("teacher_franek", Action.EXPORT, False),
-        # ("teacher_piotrek", Action.EXPORT, False),
-        # ("adm_maciek", Action.EXPORT, True),
-        # ("admin", Action.EXPORT, True),
     ],
 )
 def test_has_perm_to_action_for_fakemodel_when_user_in_group_is_granted(
@@ -118,7 +115,35 @@ def test_has_perm_by_permissions_for_fakemodel_when_user_in_group_is_granted(
     )
 
 
-# def test_has_perm_checker_for_fakemodel_and_custom_action_when_user_in_group_is_granted(
-#     users, user_groups, person, permission_codenames, has_permission
-# ):
-#     pass
+@pytest.mark.parametrize(
+    "person,action,has_permission",
+    [
+        ("teacher_janek", Action.EXPORT, False),
+        ("teacher_franek", Action.EXPORT, False),
+        ("teacher_piotrek", Action.EXPORT, False),
+        ("adm_maciek", Action.EXPORT, True),
+        ("admin", Action.EXPORT, True),
+    ],
+)
+def test_has_perm_to_action_for_fakemodel_and_custom_action_when_user_in_group_is_granted(
+    users, user_groups, person, has_permission, action
+):
+    perm_checker = PermissionChecker(users[person])
+    assert perm_checker.has_perm_to_action(FakeModel, action) is has_permission
+
+
+@pytest.mark.parametrize(
+    "person,action,has_permission",
+    [
+        ("teacher_janek", Action.VIEW, False),
+        ("adm_maciek", Action.VIEW, True),
+    ],
+)
+def test_has_perm_by_permissions_for_field_of_fakemodel_when_user_in_group_is_granted(
+    users, user_groups, person, has_permission, action
+):
+    perm_checker = PermissionChecker(users[person])
+    view_permission, change_permission = perm_checker.has_field_permission_checker(
+        FakeModel, "name"
+    )
+    assert view_permission is has_permission and change_permission is False

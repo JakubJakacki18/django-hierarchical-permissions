@@ -12,7 +12,7 @@ class FieldPermissionForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         perm_checker = PermissionChecker(user)
         for field_name in list(self.fields.keys()):
-            view_permission, change_permission = (
+            view_permission, change_permission, _ = (
                 perm_checker.has_field_permission_checker(
                     self._meta.model, field_name, obj
                 )
