@@ -100,7 +100,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # HIERARCHICAL_PERMISSIONS_UNIT_TYPES = [("TEST", "test choice")]
 
 HIERARCHICAL_PERMISSIONS_SETTINGS = {
-    "EXTRA_PERMISSION_SUBTYPES": {
+    "EXTRA_PERMISSION_TYPES": {
         "hardcoded": [
             (
                 "HOLIDAY",
@@ -114,6 +114,11 @@ HIERARCHICAL_PERMISSIONS_SETTINGS = {
                 "STAFF",
                 "staff",
                 lambda action, model: f"Can user {action} {model} when is member of staff",
+            ),
+            (
+                "OWNER",
+                "owner",
+                lambda action_value, model_name: f"Can {action_value} {model_name} when user is assigned to owner field",
             ),
             ("SUPER_STAFF", "superStaff"),
         ],

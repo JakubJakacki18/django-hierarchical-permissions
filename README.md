@@ -57,8 +57,8 @@ For example:
 
 - *John* belongs to **User Group 2**, which grants him access to **Org Unit 3** and permissions defined in **Permission
   Group 3**.
-- *Cris* is a member of **User Group 1** and **User Group 3**, inheriting access to both **Org Unit 1** and **Org Unit 3
-  **, as well as permissions from **Permission Groups 1** and **3**.
+- *Cris* is a member of **User Group 1** and **User Group 3**, inheriting access to both **Org Unit 1** and
+  **Org Unit 3**, as well as permissions from **Permission Groups 1** and **3**.
 - *Michael* is connected to **User Group 1**, gaining access to **Org Unit 1** and **Permission Group 1**.
 
 This model provides a clear and scalable structure for **role-based access control**, where permissions are not assigned
@@ -176,7 +176,32 @@ Permission-checking process:
 
 ## Installation and configuration
 
-**TO DO**
+1. Install package via your dependency manager(e.g. **Pip**, **Poetry**)
+2. Configure settings file:
+
+   Below is the configuration template
+    ```
+    #settings.py
+   
+    HIERARCHICAL_PERMISSIONS_SETTINGS = {
+       "EXTRA_PERMISSION_TYPES": {
+           "hardcoded": [],
+           "olp": [],
+           "regular": [],
+       },
+       "EXTRA_ACTIONS":{},
+       "EXTRA_ORG_UNIT_TYPES": [],
+    }
+   ```
+   The dictionary named `HIERARCHICAL_PERMISSIONS_SETTINGS` is used to expand `PermissionType`, `Action`,
+   `PERMISSION_TYPES_LABELS`, `PERMISSION_DIVIDER_BY_STRATEGY`, `org_unit_types`.
+    1. `EXTRA_PERMISSION_TYPES` -
+    2. `EXTRA_ACTIONS` -
+    3. `EXTRA_ORG_UNIT_TYPES` -
+
+   Example settings.py with filled `HIERARCHICAL_PERMISSIONS_SETTINGS` can be found in `tests/testapp/settings.py`
+
+**TO BE CONTINUED...**
 
 ## Bibliography
 
@@ -191,4 +216,4 @@ Link: [Rules](https://pypi.org/project/rules/)
 
 ## Last changed
 
-Date: **25.01.2026r.**
+Date: **25.02.2026r.**

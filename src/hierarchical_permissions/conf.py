@@ -37,8 +37,8 @@ def _merge_lists(base, user):
     return tuple(merged)
 
 
-def _init_permission_subtypes():
-    user_subtypes_with_labels = get_user_setting("EXTRA_PERMISSION_SUBTYPES", {})
+def _init_permission_types():
+    user_subtypes_with_labels = get_user_setting("EXTRA_PERMISSION_TYPES", {})
     permission_levels = [e for e in PermissionStrategy]
     if not all(
         permission_level.value in user_subtypes_with_labels.keys()
@@ -77,9 +77,9 @@ def _init_permission_subtypes():
             start_of_permission_subtype_divided_by_level = len(new_permission_subtypes)
     except ImproperlyConfigured:
         raise ImproperlyConfigured(
-            "Invalid EXTRA_PERMISSION_SUBTYPES configuration.\n\n"
+            "Invalid EXTRA_PERMISSION_TYPES configuration.\n\n"
             "Expected structure:\n"
-            "EXTRA_PERMISSION_SUBTYPES = {\n"
+            "EXTRA_PERMISSION_TYPES = {\n"
             "    'value of PermissionLevel ': [\n"
             "        (\n"
             "            'PermissionSubType enum name',        # str\n"
@@ -142,12 +142,12 @@ def _get_permission_divider_by_strategy():
     return final_dividers
 
 
-extra_permission_subtypes, extra_subtypes_labels, extra_permission_divider_by_types = (
-    _init_permission_subtypes()
+extra_permission_types, extra_subtypes_labels, extra_permission_divider_by_types = (
+    _init_permission_types()
 )
 # PermissionType declaration
 PermissionType = _create_enum(
-    "PermissionType", defaults.PERMISSION_TYPE, extra_permission_subtypes
+    "PermissionType", defaults.PERMISSION_TYPE, extra_permission_types
 )
 
 _user_actions = get_user_setting("EXTRA_ACTIONS", {})

@@ -52,9 +52,9 @@ def extra_values_dict():
     return {
         Action: 1,
         OrganizationalUnit: 2,
-        PermissionType: 5,
-        PERMISSION_TYPES_LABELS_KEY: 2,
-        PermissionStrategy.OBJECT: 3,
+        PermissionType: 6,
+        PERMISSION_TYPES_LABELS_KEY: 3,
+        PermissionStrategy.OBJECT: 4,
         PermissionStrategy.MODEL: 1,
         PermissionStrategy.HARDCODED: 1,
     }
@@ -65,7 +65,7 @@ def extra_values_dict():
     [
         (PermissionStrategy, None),
         (Action, "EXTRA_ACTIONS"),
-        (PermissionType, "EXTRA_PERMISSION_SUBTYPES"),
+        (PermissionType, "EXTRA_PERMISSION_TYPES"),
     ],
 )
 def test_enum_when_extended_by_extra_values_has_expected_size(

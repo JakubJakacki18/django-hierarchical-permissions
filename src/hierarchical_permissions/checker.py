@@ -16,6 +16,7 @@ from .selectors import (
     check_user_has_permission,
     get_permissions_from_user_groups,
     get_hierarchy_of_organizational_units,
+    get_content_type_by_model,
 )
 from .strategies import (
     PermissionCheckerStrategy,
@@ -115,7 +116,7 @@ class PermissionChecker:
 
     def has_field_permission_checker(self, model, field_name, obj=None):
         # TODO Walidacja field_name do napisania
-        content_type = ContentType.objects.get_for_model(model)
+        content_type = get_content_type_by_model(model)
         view_permission, change_permission = (
             self.has_perm_by_permissions_codenames(
                 obj,

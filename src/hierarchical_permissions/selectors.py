@@ -3,14 +3,19 @@ from typing import Optional, Any
 
 from django.contrib.auth.models import User, Permission
 from django.contrib.contenttypes.models import ContentType
+from django.db.models import Model
 
 from hierarchical_permissions.conf import PermissionType
 from hierarchical_permissions.models import UserGroup, OrganizationalUnit
 
 
+def get_content_type_by_model(model: Model) -> ContentType:
+    return ContentType.objects.get_for_model(model)
+
+
 def get_all_permissions_for_model(model, fields_included=False, action=None):
     """Get all permissions for model. Use ``action`` argument to filter all permissions"""
-    content_type = ContentType.objects.get_for_model(model)
+    content_type = get_content_type_by_model(model)
     permissions = Permission.objects.filter(content_type=content_type)
     if action:
         permissions = permissions.filter(codename__contains=action.value)
