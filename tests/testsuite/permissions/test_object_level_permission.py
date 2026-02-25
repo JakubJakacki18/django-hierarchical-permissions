@@ -3,10 +3,8 @@ from django.contrib.auth.models import Group
 
 from hierarchical_permissions.conf import Action
 from hierarchical_permissions.models import UserGroup
-from hierarchical_permissions.services import (
-    PermissionCreationService,
-)
 from hierarchical_permissions.checker import PermissionChecker
+from hierarchical_permissions.services import add_permissions_to_permissions_groups
 from test_model_app.models import FakeModel
 
 
@@ -48,7 +46,7 @@ def permission_groups(db, permissions_codenames):
             },
         ],
     }
-    PermissionCreationService.add_permissions_to_permissions_groups(_permission_groups)
+    add_permissions_to_permissions_groups(_permission_groups)
     return {
         "teacher": Group.objects.get(name="Teacher"),
         "leading_teacher": Group.objects.get(name="Leading teacher"),

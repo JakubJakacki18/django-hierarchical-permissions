@@ -15,6 +15,7 @@ from .selectors import (
     get_all_permissions_for_model,
     check_user_has_permission,
     get_permissions_from_user_groups,
+    get_hierarchy_of_organizational_units,
 )
 from .strategies import (
     PermissionCheckerStrategy,
@@ -24,7 +25,6 @@ from .strategies import (
 )
 from .utils import (
     permissions_divider,
-    get_hierarchy_of_organizational_units,
 )
 from .models import UserGroup, OrganizationalUnit
 from django.contrib.contenttypes.models import ContentType

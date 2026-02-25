@@ -4,8 +4,11 @@ from django.contrib.auth.models import User, Group, Permission
 from django.contrib.contenttypes.models import ContentType
 
 from hierarchical_permissions.conf import PermissionType
+from hierarchical_permissions.creators import create_crud_permissions_by_type
 from hierarchical_permissions.models import OrganizationalUnit, UserGroup
-from hierarchical_permissions.services import PermissionCreationService
+from hierarchical_permissions.services import (
+    add_rules_to_permissions,
+)
 from test_model_app.models import FakeModel
 
 from tests.test_model_app.rules import is_owner, is_staff, is_staff_and_owner
@@ -157,23 +160,23 @@ def permissions_codenames(db):
     content_type = ContentType.objects.get_for_model(FakeModel)
     # FakeModel._meta.permissions += *PermissionCreationService.create_fields_permissions(FakeModel),
     permissions = (
-        *PermissionCreationService.add_rules_to_permissions(
+        *add_rules_to_permissions(
             content_type.app_label,
-            PermissionCreationService.create_crud_permissions_by_type(
+            create_crud_permissions_by_type(
                 FakeModel._meta.model_name, PermissionType.OWNER
             ),
             [is_owner],
         ),
-        *PermissionCreationService.add_rules_to_permissions(
+        *add_rules_to_permissions(
             content_type.app_label,
-            PermissionCreationService.create_crud_permissions_by_type(
+            create_crud_permissions_by_type(
                 FakeModel._meta.model_name, PermissionType.STAFF
             ),
             [is_staff],
         ),
-        *PermissionCreationService.add_rules_to_permissions(
+        *add_rules_to_permissions(
             content_type.app_label,
-            PermissionCreationService.create_crud_permissions_by_type(
+            create_crud_permissions_by_type(
                 FakeModel._meta.model_name,
                 PermissionType.SUPER_STAFF,
                 "when is owner and staff member",

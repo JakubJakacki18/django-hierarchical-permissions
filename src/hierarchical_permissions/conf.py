@@ -164,4 +164,5 @@ if TYPE_CHECKING:
     from enum import Enum
 
     PermissionType = Enum
-    Action = Enum
+
+    class Action(str, Enum): ...

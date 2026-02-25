@@ -51,11 +51,8 @@ def permissions_divider(*permissions) -> dict[str, list]:
     return permissions_dict
 
 
-def actions_to_list(*actions: Action) -> list[str]:
-    actions_list = []
-    for action in actions:
-        actions_list.append(action.value)
-    return actions_list
+def action_values_to_list(*actions: Action) -> list[str]:
+    return [action.value for action in actions]
 
 
 def get_prefix_from_permission(permission: str):
@@ -70,20 +67,6 @@ def get_model(model_or_obj):
         return model_or_obj.__class__
     else:
         return model_or_obj
-
-
-def get_hierarchy_of_organizational_units(
-    obj: Any,
-) -> Iterable[OrganizationalUnit]:
-    parent_organizational_unit = obj.parent
-    list_of_organizational_units = parent_organizational_unit.get_ancestors(
-        ascending=True
-    )
-    # In test method get_ancestors() with include_self=True doesn't work
-    list_of_organizational_units = [parent_organizational_unit] + list(
-        list_of_organizational_units
-    )
-    return list_of_organizational_units
 
 
 # def get_organizational_unit_choices() -> list[tuple[str, str]]:

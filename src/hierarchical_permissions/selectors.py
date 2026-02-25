@@ -63,3 +63,17 @@ def check_user_has_permission(
     query = Permission.objects.filter(**filters)
     print(str(query.query))
     return Permission.objects.filter(**filters).exists()
+
+
+def get_hierarchy_of_organizational_units(
+    obj: Any,
+) -> Iterable[OrganizationalUnit]:
+    parent_organizational_unit = obj.parent
+    list_of_organizational_units = parent_organizational_unit.get_ancestors(
+        ascending=True
+    )
+    # In test method get_ancestors() with include_self=True doesn't work
+    list_of_organizational_units = [parent_organizational_unit] + list(
+        list_of_organizational_units
+    )
+    return list_of_organizational_units
